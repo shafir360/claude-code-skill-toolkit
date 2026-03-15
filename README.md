@@ -1,6 +1,20 @@
 # Claude Code Skill Toolkit
 
-Create, validate, improve, and install Claude Code skills — with optional research-first modes that investigate the domain before generating or improving. Powered by research from 34 sources including Anthropic's own eval pipeline.
+> Build, validate, improve, and install Claude Code skills — from a plain-English description to a production-ready slash command.
+
+**Claude Code skills** are custom slash commands (like `/deploy`, `/lint`, `/research`) that extend what Claude Code can do. They're markdown files with structured instructions that Claude follows when you invoke them. This toolkit automates creating those skills — so instead of writing SKILL.md files by hand, you describe what you want and get a validated, best-practice skill back.
+
+## Why Use This
+
+- **Skip the boilerplate** — Describe your skill in plain English, get a complete SKILL.md with frontmatter, phases, output templates, and rules
+- **Research-backed quality** — Optional modes investigate your skill's domain before generating, finding best practices and pitfalls you'd miss
+- **Validated by default** — Every generated skill is checked against 13+ spec rules before you see it
+- **Three quality tiers** — Standard (fast), Research-First (informed), and Deep Research-First (exhaustive with adversarial review)
+
+## Prerequisites
+
+- [Claude Code](https://claude.ai/download) CLI installed
+- Python 3.6+ (stdlib only — no pip dependencies needed)
 
 ## Quick Start
 
@@ -15,61 +29,106 @@ Skills activate automatically when Claude Code runs in this directory.
 /generate-skill a skill that formats JSON files with configurable indentation
 ```
 
-Generated skill is validated and saved to `output/`. Install globally with `/implement-skill`.
-
-For research-backed generation (slower, higher quality):
-
-```
-/research-generate-skill a skill that manages database migrations with rollback support
-```
+That's it. The skill is validated and saved to `output/`. Install it globally with `/implement-skill`.
 
 ## Skills
 
 ### Skill Generation & Improvement
 
-| Command | Tier | Description |
-|---------|------|-------------|
-| `/generate-skill` | Standard | Create a skill from a plain-English description. Gathers requirements, generates SKILL.md + references + scripts, auto-validates, saves to `output/`. |
-| `/research-generate-skill` | Research | Research-first generation. Investigates the domain with parallel Sonnet agents, then generates a skill informed by real-world findings. |
-| `/deep-research-generate-skill` | Deep Research | Exhaustive two-round research with tiered models (Sonnet for collection, Opus for analysis + skeptic). Produces skills backed by per-finding confidence levels and contradiction analysis. |
-| `/improve-skill` | Standard | Analyze a skill against best practices. Categorizes issues by priority, presents a plan, auto-applies approved changes with `.bak` backup. |
-| `/research-improve-skill` | Research | Research-first improvement. Investigates the skill's domain for best-in-class examples and gaps, then suggests research-backed improvements. |
-| `/deep-research-improve-skill` | Deep Research | Exhaustive two-round improvement with tiered models. Dedicated Opus skeptic challenges improvement assumptions — sometimes the current approach is already optimal. |
+| Command | Tier | Time | Description |
+|---------|------|------|-------------|
+| `/generate-skill` | Standard | ~2 min | Create a skill from a plain-English description. Gathers requirements, generates SKILL.md + references + scripts, auto-validates. |
+| `/research-generate-skill` | Research | ~8 min | Research-first generation. Spawns parallel Sonnet agents to investigate the domain, then generates informed by findings. |
+| `/deep-research-generate-skill` | Deep Research | ~15 min | Two-round research with tiered models. Opus gap analysis + skeptic agent. Produces skills with per-finding confidence levels. |
+| `/improve-skill` | Standard | ~3 min | Analyze a skill against best practices. Categorizes issues by priority, applies approved changes with `.bak` backup. |
+| `/research-improve-skill` | Research | ~8 min | Research-first improvement. Finds best-in-class examples and domain-specific gaps before suggesting changes. |
+| `/deep-research-improve-skill` | Deep Research | ~15 min | Two-round improvement with Opus skeptic that challenges improvement assumptions — defends the current approach when it's already optimal. |
 
 ### Utilities & Research
 
-| Command | Description |
-|---------|-------------|
-| `/validate-skill` | Read-only checker. 13+ deterministic checks via Python script, then qualitative assessment of instructions and structure. |
-| `/implement-skill` | Install a generated skill from `output/` to `~/.claude/skills/`. Validates before installing. |
-| `/research` | Conduct multi-source research on any topic. Spawns parallel agents, synthesizes findings, produces a cited report. |
-| `/deep-research` | Exhaustive two-round research with tiered models. Round 1 broad sweep, Opus gap analysis, Round 2 targeted dives + Opus skeptic. Per-finding confidence and contradiction analysis. |
+| Command | Time | Description |
+|---------|------|-------------|
+| `/validate-skill` | ~30s | Read-only checker. 13+ deterministic checks via Python script + qualitative assessment. |
+| `/implement-skill` | ~10s | Install a generated skill from `output/` to `~/.claude/skills/`. Validates before installing. |
+| `/research` | ~5 min | Multi-source research on any topic. Parallel Sonnet agents, synthesized cited report. |
+| `/deep-research` | ~12 min | Exhaustive two-round research. Broad sweep, Opus gap analysis, targeted dives + Opus skeptic. Per-finding confidence levels. |
+
+## How It Works
+
+```
+   You describe a skill in plain English
+                    |
+                    v
+        ┌───────────────────────┐
+        │   GENERATE / RESEARCH │  Analyzes requirements, (optionally) researches
+        │                       │  the domain, designs and writes SKILL.md
+        └───────────┬───────────┘
+                    |
+                    v
+          output/<skill-name>/       Saved locally with README + RESEARCH_BRIEF
+                    |
+                    v
+        ┌───────────────────────┐
+        │      VALIDATE         │  13+ automated checks (YAML, naming, description
+        │                       │  quality, body length, references depth)
+        └───────────┬───────────┘
+                    |
+                    v
+        ┌───────────────────────┐
+        │      IMPROVE          │  Compares against best practices, suggests
+        │                       │  improvements by priority, applies with backup
+        └───────────┬───────────┘
+                    |
+                    v
+        ┌───────────────────────┐
+        │     IMPLEMENT         │  Copies to ~/.claude/skills/ so it works
+        │                       │  in any project on your machine
+        └───────────────────────┘
+```
+
+## Standard vs Research-First vs Deep Research
+
+| | Standard | Research-First | Deep Research-First |
+|---|---------|----------------|---------------------|
+| **Speed** | ~2 min | ~8 min | ~15-17 min |
+| **Best for** | Familiar domains, simple skills | Unfamiliar domains, complex skills | Critical skills, maximum quality |
+| **Research rounds** | None | 1 round (Sonnet only) | 2 rounds (Sonnet + Opus) |
+| **Model strategy** | Inherit parent | All Sonnet agents | Tiered: Sonnet collect, Opus analyze |
+| **Skeptic agent** | No | No | Yes — dedicated Opus devil's advocate |
+| **Confidence levels** | No | No | Per-finding (High/Medium/Low) |
+| **Contradiction analysis** | No | No | Always included |
+| **Output** | SKILL.md + references | + RESEARCH_BRIEF.md | + Enhanced brief with confidence |
+| **Generate** | `/generate-skill` | `/research-generate-skill` | `/deep-research-generate-skill` |
+| **Improve** | `/improve-skill` | `/research-improve-skill` | `/deep-research-improve-skill` |
+
+**Rule of thumb**: Start with Standard. Use Research-First when you're building a skill in a domain you don't know well. Use Deep Research-First when the skill is important enough to spend 15 minutes getting it right.
 
 ## Use Cases
 
-**Build a deployment skill from scratch:**
+**Build a skill from scratch:**
 ```
 /generate-skill a skill that deploys to AWS using CDK, runs tests first, and rolls back on failure
 ```
-Asks up to 3 clarifying questions, generates SKILL.md + references, validates, saves to `output/deploy-aws/`.
 
-**Research-generate a skill in an unfamiliar domain:**
+**Research an unfamiliar domain first:**
 ```
 /research-generate-skill a skill that converts OpenAPI specs to Claude Code skills
 ```
-Spawns 3-5 Sonnet agents to research OpenAPI patterns, existing converters, and common pitfalls. Produces a research brief + higher-quality skill.
 
-**Validate a skill you found online:**
+**Maximum quality with adversarial review:**
+```
+/deep-research-generate-skill a skill that manages Kubernetes deployments with canary releases
+```
+
+**Validate a community skill:**
 ```
 /validate-skill ~/.claude/skills/some-community-skill
 ```
-Runs 13+ checks (YAML format, naming, description quality, body length) and gives a PASS/WARN/FAIL report.
 
-**Improve your skill's activation rate:**
+**Improve activation rate:**
 ```
 /improve-skill ~/.claude/skills/my-skill
 ```
-Analyzes against best practices, generates 2-3 description variants with trigger keywords, applies approved changes with `.bak` backup.
 
 **Full pipeline — generate, polish, install:**
 ```
@@ -79,111 +138,91 @@ Analyzes against best practices, generates 2-3 description variants with trigger
 /implement-skill run-eslint
 ```
 
-**Deep research-generate for maximum quality:**
-```
-/deep-research-generate-skill a skill that manages Kubernetes deployments with canary releases
-```
-Runs two rounds of research: Round 1 spawns 5-7 Sonnet agents for broad domain coverage, Opus analyzes gaps, Round 2 launches targeted collectors + Opus skeptic. Produces an enhanced design brief with per-finding confidence, then generates the skill.
-
-**Deep research-improve with skeptic review:**
-```
-/deep-research-improve-skill .claude/skills/deploy-k8s
-```
-Same two-round architecture but for improvement. The Opus skeptic specifically challenges improvement assumptions — defending the current approach when it's already optimal.
-
-**Pure deep research on any topic:**
+**Deep research on any topic:**
 ```
 /deep-research What are the security implications of WebAssembly in production?
 ```
-Two-round investigation with per-finding confidence, contradiction analysis, and source credibility assessment.
 
-## Standard vs Research-First vs Deep Research
+## Example Output
 
-| | Standard | Research-First | Deep Research-First |
-|---|---------|----------------|---------------------|
-| **Speed** | ~2 minutes | ~8 minutes | ~15-17 minutes |
-| **When to use** | Familiar domains, simple skills | Unfamiliar domains, complex skills | Maximum quality, critical skills |
-| **Research rounds** | None | 1 round (Sonnet only) | 2 rounds (Sonnet + Opus) |
-| **Model strategy** | Inherit parent | All Sonnet agents | Tiered: Sonnet collect, Opus analyze |
-| **Skeptic agent** | No | No | Yes (Opus devil's advocate) |
-| **Confidence levels** | No | No | Per-finding (High/Medium/Low) |
-| **Contradiction analysis** | No | No | Always included |
-| **Output** | SKILL.md + references | + RESEARCH_BRIEF.md | + Enhanced RESEARCH_BRIEF.md with confidence |
-| **Generate** | `/generate-skill` | `/research-generate-skill` | `/deep-research-generate-skill` |
-| **Improve** | `/improve-skill` | `/research-improve-skill` | `/deep-research-improve-skill` |
-
-Use **standard** for quick iterations. Use **research-first** when the domain is unfamiliar. Use **deep research-first** when building critical skills where incorrect domain understanding leads to poorly designed outputs.
-
-## Workflow
+Running `/generate-skill` produces a directory like this:
 
 ```
-/generate-skill "a skill that..."                    standard generation
-        — or —
-/research-generate-skill "a skill that..."            research-first generation
-        — or —
-/deep-research-generate-skill "a skill that..."       deep research-first generation
-        |
-        v
-  output/<skill-name>/                    saved locally
-        |
-        v
-/validate-skill output/<name>             13+ quality checks
-        |
-        v
-/improve-skill output/<name>                          standard improvement
-        — or —
-/research-improve-skill output/<name>                  research-first improvement
-        — or —
-/deep-research-improve-skill output/<name>             deep research-first improvement
-        |
-        v
-/implement-skill <name>                   install to ~/.claude/skills/
+output/format-json/
+├── SKILL.md              # Complete skill definition
+├── README.md             # Documentation with usage examples
+├── RESEARCH_BRIEF.md     # Domain findings (research modes only)
+└── references/           # Background knowledge (if needed)
+    └── json-standards.md
 ```
 
-## What Gets Generated
-
-Running `/generate-skill` or `/research-generate-skill` produces:
-
-```
-output/my-skill/
-├── SKILL.md              # Skill definition (frontmatter + instructions)
-├── RESEARCH_BRIEF.md     # Domain research findings (research-first only)
-├── references/           # Background knowledge (if needed)
-│   └── api-reference.md
-└── scripts/              # Automation scripts (if needed)
-    └── validate.py
-```
-
-Example SKILL.md frontmatter:
+The generated SKILL.md looks like:
 
 ```yaml
 ---
-name: my-skill
-description: Does X when Y happens. Use when saying "do X", "run X", or "X this file".
-argument-hint: <input description>
+name: format-json
+description: 'Formats JSON files with configurable indentation and sorting.
+  Handles nested objects, arrays, and edge cases like empty files or invalid
+  JSON. Use when saying "format JSON", "pretty print JSON", "indent JSON",
+  or "fix JSON formatting".'
+argument-hint: "file path or glob pattern"
 allowed-tools:
   - Read
   - Write
-  - Bash(python *)
+  - Glob
 ---
+
+# Format JSON: $ARGUMENTS
+
+[Phases with imperative instructions...]
+
+## Rules
+1. Always create a backup before modifying files
+2. Validate JSON before and after formatting
+...
 ```
 
 ## Skill Gallery
 
-The [`output/`](output/) folder is a browsable gallery of generated skills. Each skill includes its own README with usage examples, installation instructions, and design decisions.
+The [`output/`](output/) folder contains generated skills you can browse, install, or use as examples:
 
-Browse the gallery to find skills you can install directly, or use them as examples when building your own.
+| Skill | Description |
+|-------|-------------|
+| [deep-research](output/deep-research/) | Two-round exhaustive research with tiered models and skeptic agent |
+| [deep-research-generate-skill](output/deep-research-generate-skill/) | Premium skill generation backed by deep research |
+| [deep-research-improve-skill](output/deep-research-improve-skill/) | Premium skill improvement with adversarial review |
 
-To add a skill you've generated to the gallery, just commit it — `output/` is tracked by git.
+Each skill includes its own README with usage examples, design decisions, and research insights. To add your own, just commit to `output/`.
+
+## What Makes This Different
+
+**Eval-driven** — Every generated skill is validated against the [agentskills.io](https://agentskills.io/specification) spec. The validation script checks 13+ rules including YAML format, naming, description quality, and body length.
+
+**Activation-optimized** — Descriptions include "Use when..." trigger clauses with literal user phrases, pushing activation rates from ~20% to ~95% ([source](https://medium.com/@ivan.seleznov1/why-claude-code-skills-dont-activate-and-how-to-fix-it-86f679409af1)).
+
+**Research-backed** — Built on Anthropic's [skill-creator 2.0](https://claude.com/blog/improving-skill-creator-test-measure-and-refine-agent-skills) eval pipeline, [official best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices), and top community collections.
+
+**Adversarial review** — Deep research modes use a dedicated Opus skeptic agent that actively tries to disprove findings, countering the ["Chat-Chamber effect"](https://arxiv.org/html/2511.07784v1) where AI confirms assumptions rather than challenging them.
+
+**Not bloated** — Skills stay under 500 lines. Large content goes in `references/`, scripts in `scripts/`. Progressive disclosure pattern throughout.
 
 ## Install to Other Projects
 
-```powershell
-# Install to a specific project
+```bash
+# Copy toolkit skills to a specific project
 powershell -ExecutionPolicy Bypass -File install.ps1 -Target C:\path\to\project
 
-# Install globally
+# Install toolkit skills globally
 powershell -ExecutionPolicy Bypass -File install.ps1 -Global
+```
+
+## Standalone Validation
+
+`quick_validate.py` works without Claude Code — use it in CI or as a pre-commit check:
+
+```bash
+python .claude/skills/validate-skill/scripts/quick_validate.py path/to/any-skill
+# JSON output with pass/warn/fail per check. Exit 0 = valid, 1 = failures.
 ```
 
 ## Project Structure
@@ -198,38 +237,51 @@ powershell -ExecutionPolicy Bypass -File install.ps1 -Global
 │   ├── improve-skill/               6-phase skill improver
 │   ├── research-improve-skill/      8-phase research-first improver
 │   ├── deep-research-improve-skill/ 10-phase deep research-first improver
-│   ├── implement-skill/             output/ to global installer
+│   ├── implement-skill/             output/ → global installer
 │   ├── research/                    multi-source research tool
 │   └── deep-research/              two-round exhaustive research
-├── output/                      generated skills land here
+├── output/                      generated skills gallery
 ├── shared/                      source-of-truth references (dev only)
 ├── install.ps1                  install to other projects
 └── RESEARCH_FINDINGS.md         18 sections, 34 sources
 ```
 
-## What Makes This Different
+## Sources & Research
 
-**Eval-driven** — Every generated skill is validated against the [agentskills.io](https://agentskills.io/specification) spec. The validation script checks 13+ rules including YAML format, naming, description quality, and body length.
+This toolkit's design is informed by research across 34+ sources. Key references:
 
-**Activation-optimized** — Descriptions include "Use when..." trigger clauses with literal user phrases, pushing activation rates from ~20% to ~95% ([source](https://medium.com/@ivan.seleznov1/why-claude-code-skills-dont-activate-and-how-to-fix-it-86f679409af1)).
+- [agentskills.io Specification](https://agentskills.io/specification) — Official SKILL.md format and validation rules
+- [Anthropic Skill-Creator 2.0](https://claude.com/blog/improving-skill-creator-test-measure-and-refine-agent-skills) — Eval pipeline for testing and refining agent skills
+- [Anthropic Skill Best Practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) — Official guidance on writing effective skills
+- [Skill Activation Research](https://medium.com/@ivan.seleznov1/why-claude-code-skills-dont-activate-and-how-to-fix-it-86f679409af1) — Why "Use when..." clauses push activation from ~20% to ~95%
+- [Deep Research Agent Survey (arXiv)](https://arxiv.org/pdf/2508.12752) — Survey of autonomous research agent architectures
+- [FlowSearch: Dynamic Knowledge Flow (arXiv)](https://arxiv.org/html/2510.08521v1) — Multi-round research with progressive knowledge accumulation
+- [Multi-agent Debate for Factuality (arXiv)](https://arxiv.org/abs/2305.14325) — How adversarial agents improve accuracy
+- [Heterogeneous Agent Debate (Springer)](https://link.springer.com/article/10.1007/s44443-025-00353-3) — ~91% vs ~82% accuracy with diverse model tiers
+- [LLM Debate Limitations (arXiv)](https://arxiv.org/html/2511.07784v1) — "Minority correction asymmetry" in multi-agent systems
+- [D3: Debate, Deliberate, Decide (arXiv)](https://arxiv.org/abs/2410.04663) — Role-specialized adversarial evaluation framework
 
-**Research-backed** — Built on Anthropic's [skill-creator 2.0](https://claude.com/blog/improving-skill-creator-test-measure-and-refine-agent-skills) eval pipeline, [official best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices), and top community collections. Full research in [RESEARCH_FINDINGS.md](RESEARCH_FINDINGS.md).
+Full research compilation: [RESEARCH_FINDINGS.md](RESEARCH_FINDINGS.md)
 
-**Not bloated** — Skills stay under 500 lines. Large content in `references/`, scripts in `scripts/`. Progressive disclosure pattern throughout.
+## FAQ
 
-## Standalone Validation
+**Do I need to install anything beyond Claude Code?**
+Just Python 3.6+ for the validation script. No pip packages needed — everything uses the standard library.
 
-`quick_validate.py` works without Claude Code:
+**Does this work with VS Code?**
+Yes. Claude Code runs in any terminal. If you're using the Claude Code VS Code extension, these skills work there too.
 
-```bash
-python .claude/skills/validate-skill/scripts/quick_validate.py path/to/any-skill
-# JSON output with pass/warn/fail per check. Exit 0 = valid, 1 = failures.
-```
+**How long does generation take?**
+Standard: ~2 min. Research-first: ~8 min. Deep research-first: ~15 min. The extra time goes to domain research — the actual generation step is similar across all tiers.
 
-## Requirements
+**Can I customize generated skills after creation?**
+Absolutely. Generated skills are just markdown files. Edit them however you like, then run `/validate-skill` to make sure they still pass spec checks.
 
-- [Claude Code](https://claude.ai/download) CLI
-- Python 3.6+ (stdlib only, no pip dependencies)
+**What if I don't like the generated skill?**
+Run `/improve-skill` on it. Or regenerate with a more specific description. The research-first modes produce better results for unfamiliar domains.
+
+**Can I use this toolkit's skills in other projects?**
+Yes. Use `install.ps1` to copy the toolkit skills to any project, or install them globally to `~/.claude/skills/`.
 
 ## Contributing
 

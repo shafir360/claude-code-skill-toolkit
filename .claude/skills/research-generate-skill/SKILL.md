@@ -166,17 +166,31 @@ For skills with deterministic validation or automation:
 
 ### 6d: Write README.md
 
-Create `output/<skill-name>/README.md` with full documentation for GitHub browsing:
+Create `output/<skill-name>/README.md` with full documentation. The README should be clear enough that someone who's never used Claude Code can understand what the skill does, why it's useful, and how to use it.
 
 ```markdown
 # [skill-name]
 
-[Description from frontmatter — what it does and when to use it.]
+> [One-line pitch — what this does in plain English.]
+
+[2-3 sentence description for a newcomer. Explain what problem it solves.]
+
+## Why Use This
+
+- [What problem it solves]
+- [What makes it better than doing it manually]
+- [Key differentiator]
+
+## Quick Start
+
+```
+/[skill-name] [simplest possible example]
+```
 
 ## Usage
 
 ```
-/[skill-name] [example input based on argument-hint]
+/[skill-name] [full syntax with argument-hint]
 ```
 
 ### Examples
@@ -185,27 +199,21 @@ Create `output/<skill-name>/README.md` with full documentation for GitHub browsi
 - `/[skill-name] [concrete example 2]`
 - `/[skill-name] [concrete example 3]`
 
-## Installation
+## How It Works
 
-Copy the skill to your global Claude Code skills directory:
+[Step-by-step explanation. For multi-phase skills, use a table with phase, timing, and description.]
 
-```bash
-cp -r output/[skill-name] ~/.claude/skills/[skill-name]
-```
+## Example Output
 
-Or use the toolkit's install command:
-
-```
-/implement-skill [skill-name]
-```
-
-## What It Does
-
-[2-3 sentences explaining the skill's workflow — what phases it goes through, what it produces.]
+[Abbreviated but realistic example of what the skill produces — fenced code block.]
 
 ## Research Insights
 
-[3-5 bullet points from the Design Brief that shaped this skill's design. Reference specific findings.]
+[3-5 bullet points from the Design Brief that shaped this skill's design. Reference specific findings with source URLs where available.]
+
+## When to Use This vs Alternatives
+
+[Comparison with lighter/heavier alternatives in the toolkit, if applicable.]
 
 ## Tools Used
 
@@ -213,15 +221,26 @@ Or use the toolkit's install command:
 |------|---------|
 | [tool] | [why this skill needs it] |
 
-## Design Decisions
+## Limitations & Edge Cases
 
-- **Structure**: [simple/standard/full] — [why]
-- **Pattern**: [phase/decision tree/checklist] — [why]
+- [Time cost, failure modes, when to use simpler alternatives]
+
+## Sources & References
+
+[If the Design Brief includes source URLs, list the most important ones here as clickable links with brief descriptions.]
+
+## Installation
+
+```bash
+cp -r output/[skill-name] ~/.claude/skills/[skill-name]
+```
+
+Or: `/implement-skill [skill-name]`
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/download) CLI
-- [Any other requirements from scripts/]
+- [Any other requirements]
 
 ---
 

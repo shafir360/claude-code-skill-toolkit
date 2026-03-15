@@ -1,6 +1,21 @@
 # deep-research-generate-skill
 
-Generates a Claude Code skill backed by exhaustive two-round research with tiered model strategy. Round 1 spawns broad-sweep Sonnet agents across the skill's domain. An Opus gap-analysis identifies weak spots, then Round 2 launches targeted collectors plus a dedicated Opus skeptic agent. Produces a research-informed skill with enhanced design brief containing per-finding confidence levels and contradiction analysis.
+> Generate Claude Code skills backed by exhaustive two-round research — with adversarial review of domain findings before generation.
+
+Most skill generators create skills based on what the AI already knows. This one investigates first. It runs two rounds of parallel research to understand your skill's domain — existing tools, best practices, failure modes — then uses an Opus skeptic agent to challenge those findings before generating. The result is a skill informed by real-world evidence with documented confidence levels.
+
+## Why Use This
+
+- **Two research rounds before generation** — Broad sweep finds the landscape, gap analysis spots what's missing, targeted dives fill the gaps
+- **Opus skeptic challenges domain findings** — So your skill isn't built on assumptions that seem right but aren't
+- **Per-finding confidence in the design brief** — You can see exactly how well-supported each design decision is
+- **Better skills for unfamiliar domains** — When you don't know the domain, the research does the learning for you
+
+## Quick Start
+
+```
+/deep-research-generate-skill a skill that manages PostgreSQL database migrations with rollback support
+```
 
 ## Usage
 
@@ -10,9 +25,99 @@ Generates a Claude Code skill backed by exhaustive two-round research with tiere
 
 ### Examples
 
-- `/deep-research-generate-skill A skill that generates and manages database migrations for PostgreSQL`
-- `/deep-research-generate-skill Build a skill that reviews pull requests for security vulnerabilities`
-- `/deep-research-generate-skill Create a skill that converts API specs into typed client libraries`
+- `/deep-research-generate-skill a skill that reviews pull requests for security vulnerabilities`
+- `/deep-research-generate-skill a skill that converts OpenAPI specs into typed client libraries`
+- `/deep-research-generate-skill a skill that manages Kubernetes deployments with canary releases and auto-rollback`
+- `/deep-research-generate-skill a skill that generates comprehensive test suites from function signatures`
+
+## How It Works
+
+The skill runs a 9-phase pipeline in ~15-17 minutes:
+
+| Phase | Time | Model | What Happens |
+|-------|------|-------|-------------|
+| 1. Requirements | ~1 min | Parent | Analyzes description, asks up to 3 clarifying questions |
+| 2. Research Plan | ~30s | Parent | Identifies 5-7 research themes with specific questions |
+| 3. Broad Sweep (R1) | ~3 min | Sonnet | 5-7 parallel agents collect domain data |
+| 4. Gap Analysis | ~1 min | **Opus** | Identifies gaps, contradictions, claims to challenge |
+| 5. Deep Dives (R2) | ~3 min | Sonnet + **Opus** | 3-4 collectors target gaps + 1 skeptic challenges findings |
+| 6. Design Brief | ~1.5 min | **Opus** | Synthesizes into Enhanced Design Brief with confidence levels |
+| 7. Design | ~30s | Parent | Chooses structure, pattern, model strategy based on research |
+| 8. Generate | ~2 min | Parent | Writes SKILL.md, references/, scripts/, README.md |
+| 9. Validate | ~1 min | Parent | Runs 13+ checks, self-checks against Phase 1 requirements |
+
+## Example Output
+
+The skill produces a directory like this:
+
+```
+output/manage-migrations/
+├── SKILL.md                    # Complete skill with research-informed rules
+├── RESEARCH_BRIEF.md           # Enhanced design brief with confidence levels
+├── README.md                   # Full documentation
+└── references/
+    └── migration-patterns.md   # Domain-specific reference (if needed)
+```
+
+The RESEARCH_BRIEF.md includes per-finding confidence:
+
+```markdown
+# Enhanced Design Brief: manage-migrations
+_Generated: 2026-03-15 | Sources: 22 | Rounds: 2 | Confidence: High_
+
+## Prior Art
+- pg-migrate and node-pg-migrate are the most popular tools `[Confidence: HIGH]`
+- Most tools lack automatic rollback on partial failure `[Confidence: MEDIUM]`
+
+## Pitfalls to Avoid
+- Migration ordering bugs when multiple developers work in parallel `[Confidence: HIGH]`
+- Schema drift between environments `[Confidence: HIGH]`
+
+## Contradictions & Open Questions
+- Debate on whether migrations should be reversible by default (some argue irreversibility is safer)
+```
+
+## When to Use This vs Alternatives
+
+| Need | Use | Time |
+|------|-----|------|
+| Quick skill, familiar domain | `/generate-skill` | ~2 min |
+| Some research, moderate quality | `/research-generate-skill` | ~8 min |
+| **Maximum quality, unfamiliar domain** | **`/deep-research-generate-skill`** | **~15 min** |
+
+Use this when the domain is unfamiliar, when the skill is important enough to get right the first time, or when you want documented evidence for why the skill is designed the way it is.
+
+## Tools Used
+
+| Tool | Purpose |
+|------|---------|
+| Read | Read reference files and existing patterns |
+| Write | Create SKILL.md, references, README, RESEARCH_BRIEF |
+| Bash(python *) | Run validation script |
+| Bash(mkdir *) | Create output directories |
+| Grep | Search codebase for patterns |
+| Glob | Find files by pattern |
+| WebSearch | Research the skill's domain |
+| WebFetch | Fetch full page content when needed |
+
+## Limitations & Edge Cases
+
+- **Time cost**: ~15 minutes is significantly longer than standard generation (~2 min). Use `/generate-skill` for familiar domains where you don't need research.
+- **Internet required**: Research phases need WebSearch and WebFetch access.
+- **Research quality varies by domain**: Well-documented domains (web dev, databases) produce better research than niche or brand-new topics.
+- **Research != correctness**: The skeptic agent reduces false confidence, but research findings still need human judgment for critical applications.
+- **500-line limit**: Generated SKILL.md files stay under 500 lines per spec. Very complex skills may need manual refinement of the references/ structure.
+
+## Sources & References
+
+- [Deep Research Agent Survey (arXiv)](https://arxiv.org/pdf/2508.12752) — Two-round architecture is standard across all leading systems
+- [Heterogeneous Agent Debate (Springer)](https://link.springer.com/article/10.1007/s44443-025-00353-3) — ~91% vs ~82% accuracy with tiered models
+- [LLM Debate Limitations (arXiv)](https://arxiv.org/html/2511.07784v1) — Why skeptic must challenge majority regardless of confidence
+- [D3 Framework (arXiv)](https://arxiv.org/abs/2410.04663) — Confidence-weighted adversarial evaluation
+- [Skill Activation Research](https://medium.com/@ivan.seleznov1/why-claude-code-skills-dont-activate-and-how-to-fix-it-86f679409af1) — "Use when..." clauses push activation from ~20% to ~95%
+- [Anthropic Skill Best Practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) — Official guidance on effective skill design
+- [Retrieval-Augmented Code Generation (arXiv)](https://arxiv.org/abs/2510.04905) — Research-informed generation improves completion accuracy
+- [Context Rot Research (Chroma)](https://research.trychroma.com/context-rot) — Why research briefs must be summarized, not dumped verbatim
 
 ## Installation
 
@@ -22,49 +127,13 @@ This skill is part of the core toolkit. To install manually:
 cp -r output/deep-research-generate-skill ~/.claude/skills/deep-research-generate-skill
 ```
 
-Or use the toolkit's install command:
-
-```
-/implement-skill deep-research-generate-skill
-```
-
-## What It Does
-
-This skill runs a 9-phase pipeline that combines exhaustive two-round research with skill generation. Phase 1 analyzes requirements, Phases 2-5 conduct deep research (broad sweep, Opus gap analysis, targeted deep dives with a skeptic agent), Phase 6 synthesizes findings into an Enhanced Design Brief with per-finding confidence, and Phases 7-9 design, generate, and validate the skill.
-
-## Deep Research Insights
-
-- **Two-round architecture is the standard** for all leading deep research tools (OpenAI, Gemini, Perplexity) — broad sweep then targeted dives. `[Confidence: HIGH]`
-- **Tiered models achieve ~91% vs ~82% accuracy** compared to single-model approaches on reasoning tasks. `[Confidence: HIGH]`
-- **AI citation failure exceeds 60%** — strict URL-only-from-agents rule is critical. `[Confidence: HIGH]`
-- **Work redundancy reaches 0.41-0.50** without explicit agent differentiation. `[Confidence: HIGH]`
-- **Skeptic agent counters Chat-Chamber effect** where AI confirms assumptions rather than challenging them. `[Confidence: HIGH]`
-- **112% increase in unreliability** from naive query decomposition — careful sub-query design is essential. `[Confidence: MEDIUM]`
-
-## Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| Read | Read existing files and reference materials |
-| Write | Create SKILL.md, references, README, RESEARCH_BRIEF |
-| Bash(python *) | Run validation script |
-| Bash(mkdir *) | Create output directories |
-| Grep | Search codebase for patterns |
-| Glob | Find files by pattern |
-| WebSearch | Research the skill's domain |
-| WebFetch | Fetch full page content when needed |
-
-## Design Decisions
-
-- **Structure**: Standard (SKILL.md + references/) — needs background knowledge for source evaluation, research lenses, skill spec, best practices, and examples
-- **Pattern**: Phase-based workflow (9 phases) — complex multi-step process with sequential dependencies
-- **Research depth**: Two rounds with tiered models. Round 1: 5-7 Sonnet agents. Round 2: 3-4 Sonnet collectors + 1 Opus skeptic. Analysis phases use Opus.
-- **Differentiation from /research-generate-skill**: Double the research depth, tiered models, dedicated skeptic, per-finding confidence, ~15-17min vs ~9min
+Or: `/implement-skill deep-research-generate-skill`
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/download) CLI
 - Python 3.6+ (for validation script)
+- Internet access (for research phases)
 
 ---
 

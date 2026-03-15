@@ -94,28 +94,63 @@ For skills with deterministic validation or automation:
 
 ### 3d: Write README.md
 
-Create `output/<skill-name>/README.md` with full documentation for GitHub browsing:
+Create `output/<skill-name>/README.md` with full documentation for GitHub browsing. The README should be clear enough that someone who's never used Claude Code can understand what the skill does, why it's useful, and how to use it.
 
 ```markdown
 # [skill-name]
 
-[Description from frontmatter — what it does and when to use it.]
+> [One-line pitch — what this does in plain English, for someone who's never seen it before.]
+
+[2-3 sentence description explaining the skill for a newcomer. Avoid jargon. Explain what problem it solves and why that matters.]
+
+## Why Use This
+
+- [What problem it solves]
+- [What makes it better than doing it manually]
+- [Key differentiator or unique feature]
+
+## Quick Start
+
+```
+/[skill-name] [simplest possible example]
+```
 
 ## Usage
 
 ```
-/[skill-name] [example input based on argument-hint]
+/[skill-name] [full syntax with argument-hint]
 ```
 
 ### Examples
 
-- `/[skill-name] [concrete example 1]`
-- `/[skill-name] [concrete example 2]`
-- `/[skill-name] [concrete example 3]`
+- `/[skill-name] [concrete example 1 — different use case]`
+- `/[skill-name] [concrete example 2 — different domain]`
+- `/[skill-name] [concrete example 3 — edge case or advanced usage]`
+
+## How It Works
+
+[Step-by-step explanation of what the skill does internally. For multi-phase skills, use a table with phase name, timing, and description. For simple skills, a numbered list is fine.]
+
+## Example Output
+
+[Show an abbreviated but realistic example of what the skill produces — fenced code block with the actual output structure. This is the most important section for understanding what you'll get.]
+
+## When to Use This vs Alternatives
+
+[If the toolkit has lighter or heavier alternatives for the same task, add a comparison table or bullets explaining when to use each.]
+
+## Tools Used
+
+| Tool | Purpose |
+|------|---------|
+| [tool] | [why this skill needs it] |
+
+## Limitations & Edge Cases
+
+- [Honest about time cost, failure modes, or scenarios where it doesn't work well]
+- [When to use a simpler alternative instead]
 
 ## Installation
-
-Copy the skill to your global Claude Code skills directory:
 
 ```bash
 cp -r output/[skill-name] ~/.claude/skills/[skill-name]
@@ -126,21 +161,6 @@ Or use the toolkit's install command:
 ```
 /implement-skill [skill-name]
 ```
-
-## What It Does
-
-[2-3 sentences explaining the skill's workflow — what phases it goes through, what it produces.]
-
-## Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| [tool] | [why this skill needs it] |
-
-## Design Decisions
-
-- **Structure**: [simple/standard/full] — [why]
-- **Pattern**: [phase/decision tree/checklist] — [why]
 
 ## Requirements
 
