@@ -25,15 +25,25 @@ For research-backed generation (slower, higher quality):
 
 ## Skills
 
+### Skill Generation & Improvement
+
+| Command | Tier | Description |
+|---------|------|-------------|
+| `/generate-skill` | Standard | Create a skill from a plain-English description. Gathers requirements, generates SKILL.md + references + scripts, auto-validates, saves to `output/`. |
+| `/research-generate-skill` | Research | Research-first generation. Investigates the domain with parallel Sonnet agents, then generates a skill informed by real-world findings. |
+| `/deep-research-generate-skill` | Deep Research | Exhaustive two-round research with tiered models (Sonnet for collection, Opus for analysis + skeptic). Produces skills backed by per-finding confidence levels and contradiction analysis. |
+| `/improve-skill` | Standard | Analyze a skill against best practices. Categorizes issues by priority, presents a plan, auto-applies approved changes with `.bak` backup. |
+| `/research-improve-skill` | Research | Research-first improvement. Investigates the skill's domain for best-in-class examples and gaps, then suggests research-backed improvements. |
+| `/deep-research-improve-skill` | Deep Research | Exhaustive two-round improvement with tiered models. Dedicated Opus skeptic challenges improvement assumptions — sometimes the current approach is already optimal. |
+
+### Utilities & Research
+
 | Command | Description |
 |---------|-------------|
-| `/generate-skill` | Create a skill from a plain-English description. Gathers requirements, generates SKILL.md + references + scripts, auto-validates, saves to `output/`. |
-| `/research-generate-skill` | Research-first generation. Investigates the domain with parallel Sonnet agents, then generates a skill informed by real-world findings. |
 | `/validate-skill` | Read-only checker. 13+ deterministic checks via Python script, then qualitative assessment of instructions and structure. |
-| `/improve-skill` | Analyze a skill against best practices. Categorizes issues by priority, presents a plan, auto-applies approved changes with `.bak` backup. |
-| `/research-improve-skill` | Research-first improvement. Investigates the skill's domain for best-in-class examples and gaps, then suggests research-backed improvements. |
 | `/implement-skill` | Install a generated skill from `output/` to `~/.claude/skills/`. Validates before installing. |
 | `/research` | Conduct multi-source research on any topic. Spawns parallel agents, synthesizes findings, produces a cited report. |
+| `/deep-research` | Exhaustive two-round research with tiered models. Round 1 broad sweep, Opus gap analysis, Round 2 targeted dives + Opus skeptic. Per-finding confidence and contradiction analysis. |
 
 ## Use Cases
 
@@ -69,38 +79,65 @@ Analyzes against best practices, generates 2-3 description variants with trigger
 /implement-skill run-eslint
 ```
 
-## Standard vs Research-First
+**Deep research-generate for maximum quality:**
+```
+/deep-research-generate-skill a skill that manages Kubernetes deployments with canary releases
+```
+Runs two rounds of research: Round 1 spawns 5-7 Sonnet agents for broad domain coverage, Opus analyzes gaps, Round 2 launches targeted collectors + Opus skeptic. Produces an enhanced design brief with per-finding confidence, then generates the skill.
 
-| | Standard | Research-First |
-|---|---------|----------------|
-| **Speed** | ~2 minutes | ~8 minutes |
-| **When to use** | Familiar domains, simple skills | Unfamiliar domains, complex skills |
-| **What it adds** | — | Parallel Sonnet agents research the domain before generating/improving |
-| **Output** | SKILL.md + references | SKILL.md + references + RESEARCH_BRIEF.md |
-| **Commands** | `/generate-skill`, `/improve-skill` | `/research-generate-skill`, `/research-improve-skill` |
+**Deep research-improve with skeptic review:**
+```
+/deep-research-improve-skill .claude/skills/deploy-k8s
+```
+Same two-round architecture but for improvement. The Opus skeptic specifically challenges improvement assumptions — defending the current approach when it's already optimal.
 
-Use standard mode for quick iterations. Use research-first when quality matters more than speed or when you're building a skill in a domain you're not familiar with.
+**Pure deep research on any topic:**
+```
+/deep-research What are the security implications of WebAssembly in production?
+```
+Two-round investigation with per-finding confidence, contradiction analysis, and source credibility assessment.
+
+## Standard vs Research-First vs Deep Research
+
+| | Standard | Research-First | Deep Research-First |
+|---|---------|----------------|---------------------|
+| **Speed** | ~2 minutes | ~8 minutes | ~15-17 minutes |
+| **When to use** | Familiar domains, simple skills | Unfamiliar domains, complex skills | Maximum quality, critical skills |
+| **Research rounds** | None | 1 round (Sonnet only) | 2 rounds (Sonnet + Opus) |
+| **Model strategy** | Inherit parent | All Sonnet agents | Tiered: Sonnet collect, Opus analyze |
+| **Skeptic agent** | No | No | Yes (Opus devil's advocate) |
+| **Confidence levels** | No | No | Per-finding (High/Medium/Low) |
+| **Contradiction analysis** | No | No | Always included |
+| **Output** | SKILL.md + references | + RESEARCH_BRIEF.md | + Enhanced RESEARCH_BRIEF.md with confidence |
+| **Generate** | `/generate-skill` | `/research-generate-skill` | `/deep-research-generate-skill` |
+| **Improve** | `/improve-skill` | `/research-improve-skill` | `/deep-research-improve-skill` |
+
+Use **standard** for quick iterations. Use **research-first** when the domain is unfamiliar. Use **deep research-first** when building critical skills where incorrect domain understanding leads to poorly designed outputs.
 
 ## Workflow
 
 ```
-/generate-skill "a skill that..."          standard generation
+/generate-skill "a skill that..."                    standard generation
         — or —
-/research-generate-skill "a skill that..."  research-first generation
-        |
-        v
-  output/<skill-name>/          saved locally
-        |
-        v
-/validate-skill output/<name>   13+ quality checks
-        |
-        v
-/improve-skill output/<name>              standard improvement
+/research-generate-skill "a skill that..."            research-first generation
         — or —
-/research-improve-skill output/<name>      research-first improvement
+/deep-research-generate-skill "a skill that..."       deep research-first generation
         |
         v
-/implement-skill <name>         install to ~/.claude/skills/
+  output/<skill-name>/                    saved locally
+        |
+        v
+/validate-skill output/<name>             13+ quality checks
+        |
+        v
+/improve-skill output/<name>                          standard improvement
+        — or —
+/research-improve-skill output/<name>                  research-first improvement
+        — or —
+/deep-research-improve-skill output/<name>             deep research-first improvement
+        |
+        v
+/implement-skill <name>                   install to ~/.claude/skills/
 ```
 
 ## What Gets Generated
@@ -156,11 +193,14 @@ powershell -ExecutionPolicy Bypass -File install.ps1 -Global
 ├── .claude/skills/
 │   ├── generate-skill/              5-phase skill creator
 │   ├── research-generate-skill/     7-phase research-first creator
+│   ├── deep-research-generate-skill/ 9-phase deep research-first creator
 │   ├── validate-skill/              5-phase validator + quick_validate.py
 │   ├── improve-skill/               6-phase skill improver
 │   ├── research-improve-skill/      8-phase research-first improver
+│   ├── deep-research-improve-skill/ 10-phase deep research-first improver
 │   ├── implement-skill/             output/ to global installer
-│   └── research/                    multi-source research tool
+│   ├── research/                    multi-source research tool
+│   └── deep-research/              two-round exhaustive research
 ├── output/                      generated skills land here
 ├── shared/                      source-of-truth references (dev only)
 ├── install.ps1                  install to other projects
