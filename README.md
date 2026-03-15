@@ -1,6 +1,6 @@
 # Claude Code Skill Toolkit
 
-Create, validate, improve, and install Claude Code skills — powered by research from 34 sources including Anthropic's own eval pipeline.
+Create, validate, improve, and install Claude Code skills — with optional research-first modes that investigate the domain before generating or improving. Powered by research from 34 sources including Anthropic's own eval pipeline.
 
 ## Quick Start
 
@@ -22,14 +22,19 @@ Generated skill is validated and saved to `output/`. Install globally with `/imp
 | Command | Description |
 |---------|-------------|
 | `/generate-skill` | Create a skill from a plain-English description. Gathers requirements, generates SKILL.md + references + scripts, auto-validates, saves to `output/`. |
+| `/research-generate-skill` | Research-first generation. Investigates the domain with parallel Sonnet agents, then generates a skill informed by real-world findings. |
 | `/validate-skill` | Read-only checker. 13+ deterministic checks via Python script, then qualitative assessment of instructions and structure. |
 | `/improve-skill` | Analyze a skill against best practices. Categorizes issues by priority, presents a plan, auto-applies approved changes with `.bak` backup. |
+| `/research-improve-skill` | Research-first improvement. Investigates the skill's domain for best-in-class examples and gaps, then suggests research-backed improvements. |
 | `/implement-skill` | Install a generated skill from `output/` to `~/.claude/skills/`. Validates before installing. |
+| `/research` | Conduct multi-source research on any topic. Spawns parallel agents, synthesizes findings, produces a cited report. |
 
 ## Workflow
 
 ```
-/generate-skill "a skill that..."
+/generate-skill "a skill that..."          standard generation
+        — or —
+/research-generate-skill "a skill that..."  research-first generation
         |
         v
   output/<skill-name>/          saved locally
@@ -38,7 +43,9 @@ Generated skill is validated and saved to `output/`. Install globally with `/imp
 /validate-skill output/<name>   13+ quality checks
         |
         v
-/improve-skill output/<name>    polish (optional)
+/improve-skill output/<name>              standard improvement
+        — or —
+/research-improve-skill output/<name>      research-first improvement
         |
         v
 /implement-skill <name>         install to ~/.claude/skills/
@@ -59,10 +66,13 @@ powershell -ExecutionPolicy Bypass -File install.ps1 -Global
 ```
 .
 ├── .claude/skills/
-│   ├── generate-skill/          5-phase skill creator
-│   ├── validate-skill/          5-phase validator + quick_validate.py
-│   ├── improve-skill/           6-phase skill improver
-│   └── implement-skill/         output/ to global installer
+│   ├── generate-skill/              5-phase skill creator
+│   ├── research-generate-skill/     7-phase research-first creator
+│   ├── validate-skill/              5-phase validator + quick_validate.py
+│   ├── improve-skill/               6-phase skill improver
+│   ├── research-improve-skill/      8-phase research-first improver
+│   ├── implement-skill/             output/ to global installer
+│   └── research/                    multi-source research tool
 ├── output/                      generated skills land here
 ├── shared/                      source-of-truth references (dev only)
 ├── install.ps1                  install to other projects

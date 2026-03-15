@@ -27,7 +27,7 @@ if ($Global) {
     exit 1
 }
 
-$Skills = @("validate-skill", "generate-skill", "improve-skill")
+$Skills = @("validate-skill", "generate-skill", "improve-skill", "implement-skill", "research", "research-generate-skill", "research-improve-skill")
 
 Write-Host "`nInstalling skills to $InstallDir ...`n" -ForegroundColor Cyan
 
