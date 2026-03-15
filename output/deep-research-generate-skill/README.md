@@ -100,6 +100,10 @@ Use this when the domain is unfamiliar, when the skill is important enough to ge
 | WebSearch | Research the skill's domain |
 | WebFetch | Fetch full page content when needed |
 
+## Safety: Anti-Recursion Guards
+
+All sub-agents are spawned as `deep-researcher` type (never `general-purpose`), which restricts their tool access to WebSearch, WebFetch, Read, Write, Grep, and Glob. This structurally prevents agents from spawning further sub-agents or invoking skills. Every agent prompt also includes an explicit anti-recursion instruction as defense-in-depth.
+
 ## Limitations & Edge Cases
 
 - **Time cost**: ~15 minutes is significantly longer than standard generation (~2 min). Use `/generate-skill` for familiar domains where you don't need research.

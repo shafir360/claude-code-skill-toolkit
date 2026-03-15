@@ -56,7 +56,7 @@ Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in paralle
 - Each agent gets a unique theme and lens — NO overlap between agents
 - Each agent's prompt MUST include this instruction verbatim:
 
-"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs."
+"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs. IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Each agent's prompt must also include:
 - The overall research topic
@@ -71,7 +71,7 @@ Wait for all agents to return before proceeding.
 
 This is a critical analytical phase. Use the **best available model** for this work.
 
-Spawn a single **general-purpose** agent with `model: "opus"` to perform gap analysis:
+Spawn a single **deep-researcher** agent with `model: "opus"` to perform gap analysis:
 
 The agent's prompt MUST include:
 - All findings from Round 1 (concatenated)
@@ -92,7 +92,9 @@ The agent's prompt MUST include:
 Return a structured list of:
 - 3-5 specific research targets for Round 2 collector agents (each with a clear question and why it matters)
 - 2-3 specific claims for the skeptic agent to challenge (with the exact claim text and why it needs scrutiny)
-- An updated confidence assessment of the overall research so far (what do we know well vs. poorly)"
+- An updated confidence assessment of the overall research so far (what do we know well vs. poorly)
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 ## Phase 4: Targeted Deep Dives — Round 2 (~3 minutes)
 
@@ -106,7 +108,7 @@ Each targets a specific gap identified in Phase 3. Their prompts MUST:
 - Include the same data-collection instruction as Round 1 agents (verbatim block above)
 - Include this additional instruction: "Also look for evidence that CONTRADICTS the prevailing findings from Round 1. Do not only seek confirming evidence."
 
-### Skeptic Agent (1 agent, `model: "opus"`)
+### Skeptic Agent (1 **deep-researcher** agent, `model: "opus"`)
 A dedicated adversarial agent that challenges the strongest Round 1 claims. Its prompt MUST include:
 - The 2-3 specific claims identified for challenge in Phase 3
 - This instruction verbatim:
@@ -122,13 +124,15 @@ Even if you cannot disprove a claim, identify its limitations and boundary condi
 
 Challenge the majority position regardless of how confident it seems. Do not be swayed by the number of sources supporting a claim — look for quality counter-evidence.
 
-Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: your challenges/counter-evidence for each claim (with citation URLs), and your top 5 source URLs with credibility ratings."
+Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: your challenges/counter-evidence for each claim (with citation URLs), and your top 5 source URLs with credibility ratings.
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Wait for all Round 2 agents to return before proceeding.
 
 ## Phase 5: Cross-Reference & Synthesize (~2 minutes)
 
-This is the highest-quality analytical phase. Spawn a single **general-purpose** agent with `model: "opus"` to perform final synthesis.
+This is the highest-quality analytical phase. Spawn a single **deep-researcher** agent with `model: "opus"` to perform final synthesis.
 
 The agent's prompt MUST include:
 - All Round 1 findings
@@ -162,7 +166,9 @@ Return a structured synthesis document with:
 - Contradiction analysis (always present — state 'None found' if applicable)
 - Knowledge gaps
 - A complete source list with credibility ratings
-- Areas where human expert verification is recommended"
+- Areas where human expert verification is recommended
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 ## Phase 6: Report Generation (~1 minute)
 
@@ -200,7 +206,7 @@ Then ask: "Would you like me to save this report to a file, dive deeper into any
 3. **The Opus skeptic agent MUST challenge the strongest Round 1 claims regardless of confidence** — counters "minority correction asymmetry" where confident-but-wrong agents sway groups.
 4. **Each agent MUST have a distinct, non-overlapping research focus** — multi-agent systems exhibit 0.41-0.50 work redundancy without explicit differentiation.
 5. **Round 2 agents MUST reference specific gaps from Phase 3** — prevents context drift and ensures progressive knowledge accumulation.
-6. **Use tiered models**: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic agents.
+6. **Use tiered models**: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic agents. All agents MUST use the **deep-researcher** subagent type — never use general-purpose.
 7. **Per-finding confidence**: High (3+ independent sources), Medium (2 sources or counter-evidence exists), Low (single source — MUST be flagged).
 8. **If Round 1 returns fewer than 3 usable agent results**, skip Round 2 and note the limitation prominently in the report.
 9. **Contradiction section is ALWAYS present** — even if stating "No major contradictions found across [N] sources."

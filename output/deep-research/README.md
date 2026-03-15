@@ -101,6 +101,10 @@ Use `/deep-research` when you need to make a decision based on the research, whe
 | Grep | Search within fetched content |
 | Glob | Find relevant local files |
 
+## Safety: Anti-Recursion Guards
+
+All sub-agents are spawned as `deep-researcher` type (never `general-purpose`), which restricts their tool access to WebSearch, WebFetch, Read, Write, Grep, and Glob. This structurally prevents agents from spawning further sub-agents or invoking skills. Every agent prompt also includes an explicit anti-recursion instruction as defense-in-depth.
+
 ## Limitations & Edge Cases
 
 - **Time cost**: ~10-12 minutes is significantly slower than a quick web search. Use `/research` or `/summarize` for simple questions.

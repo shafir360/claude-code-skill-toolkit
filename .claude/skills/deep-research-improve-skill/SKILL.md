@@ -55,7 +55,7 @@ Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in paralle
 - Each agent gets a unique theme and lens — NO overlap between agents
 - Each agent's prompt MUST include this instruction verbatim:
 
-"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs."
+"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs. IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Each agent's prompt must also include:
 - The skill's name, purpose, and domain from Phase 1
@@ -70,7 +70,7 @@ Wait for all agents to return before proceeding.
 
 ## Phase 4: Gap Analysis & Round 2 Planning (~1 minute)
 
-Spawn a single **general-purpose** agent with `model: "opus"` to analyze Round 1 findings.
+Spawn a single **deep-researcher** agent with `model: "opus"` to analyze Round 1 findings.
 
 The agent's prompt MUST include all Round 1 findings and these instructions:
 
@@ -85,7 +85,9 @@ The agent's prompt MUST include all Round 1 findings and these instructions:
 Return:
 - 3-5 specific research targets for Round 2 collectors
 - 2-3 specific improvement assumptions for the skeptic to challenge
-- Confidence assessment of improvement potential so far"
+- Confidence assessment of improvement potential so far
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 ## Phase 5: Targeted Deep Dives — Round 2 (~3 minutes)
 
@@ -99,7 +101,7 @@ Each targets a specific gap identified in Phase 4. Their prompts MUST:
 - Include the same data-collection instruction as Round 1 (verbatim block above)
 - Include: "Also look for evidence that CONTRADICTS the prevailing improvement suggestions from Round 1. The current skill might already be doing things the right way."
 
-### Skeptic Agent (1 agent, `model: "opus"`)
+### Skeptic Agent (1 **deep-researcher** agent, `model: "opus"`)
 A dedicated adversarial agent that challenges improvement assumptions. Its prompt MUST include the 2-3 assumptions from Phase 4 and this instruction verbatim:
 
 "You are a skeptic reviewing proposed improvements to an existing skill. Your job is NOT to confirm improvements are needed — it is to challenge them. For each assumption:
@@ -108,13 +110,15 @@ A dedicated adversarial agent that challenges improvement assumptions. Its promp
 3. Check if the improvement suggestion is based on outdated or disputed best practices
 4. Consider whether the improvement adds complexity without proportional benefit
 
-Sometimes the best improvement is no change. Challenge every suggestion regardless of how reasonable it seems. Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: challenges/counter-evidence for each assumption (with citation URLs), and your top 5 source URLs with credibility ratings."
+Sometimes the best improvement is no change. Challenge every suggestion regardless of how reasonable it seems. Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: challenges/counter-evidence for each assumption (with citation URLs), and your top 5 source URLs with credibility ratings.
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Wait for all Round 2 agents to return before proceeding.
 
 ## Phase 6: Synthesize into Enhanced Improvement Context (~1.5 minutes)
 
-Spawn a single **general-purpose** agent with `model: "opus"` to produce the final synthesis.
+Spawn a single **deep-researcher** agent with `model: "opus"` to produce the final synthesis.
 
 The agent's prompt MUST include all Round 1 findings, the gap analysis, all Round 2 findings (collectors + skeptic), and these instructions:
 
@@ -126,7 +130,9 @@ The agent's prompt MUST include all Round 1 findings, the gap analysis, all Roun
 4. **Skeptic Integration**: Which improvements survived scrutiny? Which were challenged? Which should be abandoned?
 5. **Priority Ranking**: Rank improvements by confidence level AND expected impact.
 
-Return a structured Improvement Context with: Best-in-Class Benchmarks, Domain-Specific Gaps, Quality Patterns, Contradictions, Skeptic's Assessment, Priority Improvements (ranked by confidence x impact), and complete source list."
+Return a structured Improvement Context with: Best-in-Class Benchmarks, Domain-Specific Gaps, Quality Patterns, Contradictions, Skeptic's Assessment, Priority Improvements (ranked by confidence x impact), and complete source list.
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Keep the Improvement Context in memory (do NOT write to disk before user approval).
 
@@ -281,7 +287,7 @@ Save the research brief to `output/<skill-name>/RESEARCH_BRIEF.md` for future re
 - Tag research-sourced improvements with `[Research: Confidence H/M/L]` for transparency
 - Tag skeptic-challenged improvements with `[Skeptic: challenged]` so users can make informed decisions
 - NEVER generate citation URLs from memory — only use URLs agents explicitly returned
-- Use tiered models: `model: "sonnet"` for data-gathering, `model: "opus"` for gap analysis, synthesis, and skeptic
+- Use tiered models: `model: "sonnet"` for data-gathering, `model: "opus"` for gap analysis, synthesis, and skeptic. All agents MUST use the **deep-researcher** subagent type — never use general-purpose.
 - If Round 1 returns fewer than 3 usable results, skip Round 2 and note limitation
 - If research returns limited results, proceed with standard improvement and note the limitation
 - Rules section improvements MUST prioritize HIGH-confidence pitfalls from research

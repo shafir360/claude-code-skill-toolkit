@@ -61,7 +61,7 @@ Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in paralle
 - Each agent gets a unique theme and lens — NO overlap between agents
 - Each agent's prompt MUST include this instruction verbatim:
 
-"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs."
+"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs. IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Each agent's prompt must also include:
 - The skill topic and purpose from Phase 1
@@ -76,7 +76,7 @@ Wait for all agents to return before proceeding.
 
 ## Phase 4: Gap Analysis & Round 2 Planning (~1 minute)
 
-Spawn a single **general-purpose** agent with `model: "opus"` to analyze Round 1 findings.
+Spawn a single **deep-researcher** agent with `model: "opus"` to analyze Round 1 findings.
 
 The agent's prompt MUST include all Round 1 findings and these instructions:
 
@@ -91,7 +91,9 @@ The agent's prompt MUST include all Round 1 findings and these instructions:
 Return:
 - 3-5 specific research targets for Round 2 collectors (with clear questions and why each matters)
 - 2-3 specific claims for the skeptic to challenge (with exact claim text)
-- Confidence assessment of research so far"
+- Confidence assessment of research so far
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 ## Phase 5: Targeted Deep Dives — Round 2 (~3 minutes)
 
@@ -105,7 +107,7 @@ Each targets a specific gap identified in Phase 4. Their prompts MUST:
 - Include the same data-collection instruction as Round 1 (verbatim block above)
 - Include: "Also look for evidence that CONTRADICTS the prevailing findings from Round 1."
 
-### Skeptic Agent (1 agent, `model: "opus"`)
+### Skeptic Agent (1 **deep-researcher** agent, `model: "opus"`)
 A dedicated adversarial agent that challenges the strongest claims. Its prompt MUST include the 2-3 claims from Phase 4 and this instruction verbatim:
 
 "You are a skeptic and devil's advocate. Your job is NOT to confirm existing findings — it is to challenge them. For each claim:
@@ -114,13 +116,15 @@ A dedicated adversarial agent that challenges the strongest claims. Its prompt M
 3. Check if the claim's sources have been disputed or retracted
 4. Consider whether the claim overgeneralizes or omits important caveats
 
-Challenge the majority position regardless of how confident it seems. Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: challenges/counter-evidence for each claim (with citation URLs), and your top 5 source URLs with credibility ratings."
+Challenge the majority position regardless of how confident it seems. Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: challenges/counter-evidence for each claim (with citation URLs), and your top 5 source URLs with credibility ratings.
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Wait for all Round 2 agents to return before proceeding.
 
 ## Phase 6: Synthesize into Enhanced Design Brief (~1.5 minutes)
 
-Spawn a single **general-purpose** agent with `model: "opus"` to produce the final synthesis.
+Spawn a single **deep-researcher** agent with `model: "opus"` to produce the final synthesis.
 
 The agent's prompt MUST include all Round 1 findings, the gap analysis, all Round 2 findings (collectors + skeptic), and these instructions:
 
@@ -132,7 +136,9 @@ The agent's prompt MUST include all Round 1 findings, the gap analysis, all Roun
 4. **Skeptic Integration**: Which claims survived scrutiny? Which were nuanced?
 5. **Skill Design Implications**: How should each finding influence the skill's design?
 
-Return a structured Design Brief with: Prior Art, Domain Patterns, Pitfalls to Avoid (with confidence tags), Recommended Approach, Contradictions, Knowledge Gaps, and complete source list with credibility ratings."
+Return a structured Design Brief with: Prior Art, Domain Patterns, Pitfalls to Avoid (with confidence tags), Recommended Approach, Contradictions, Knowledge Gaps, and complete source list with credibility ratings.
+
+IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Write the Design Brief to `output/<skill-name>/RESEARCH_BRIEF.md`:
 
@@ -377,6 +383,6 @@ Ask: "Would you like me to install this skill to `.claude/skills/` now, or keep 
 - Never generate skills with non-standard Python dependencies in scripts/
 - Rules section MUST address at least 3 HIGH-confidence pitfalls from the Design Brief
 - NEVER generate citation URLs from memory — only use URLs agents explicitly returned
-- Use tiered models: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic
+- Use tiered models: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic. All agents MUST use the **deep-researcher** subagent type — never use general-purpose.
 - If Round 1 returns fewer than 3 usable results, skip Round 2 and note the limitation
 - If research returns limited results, proceed with generation and note the limitation
