@@ -1,12 +1,12 @@
-# Claude Code Skill Generator
+# Claude Code Skill Toolkit
 
 Create, validate, improve, and install Claude Code skills — powered by research from 34 sources including Anthropic's own eval pipeline.
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/shafir360/skill-generator.git
-cd skill-generator
+git clone https://github.com/shafir360/claude-code-skill-toolkit.git
+cd claude-code-skill-toolkit
 ```
 
 Skills activate automatically when Claude Code runs in this directory.
