@@ -17,6 +17,12 @@ Skills activate automatically when Claude Code runs in this directory.
 
 Generated skill is validated and saved to `output/`. Install globally with `/implement-skill`.
 
+For research-backed generation (slower, higher quality):
+
+```
+/research-generate-skill a skill that manages database migrations with rollback support
+```
+
 ## Skills
 
 | Command | Description |
@@ -28,6 +34,52 @@ Generated skill is validated and saved to `output/`. Install globally with `/imp
 | `/research-improve-skill` | Research-first improvement. Investigates the skill's domain for best-in-class examples and gaps, then suggests research-backed improvements. |
 | `/implement-skill` | Install a generated skill from `output/` to `~/.claude/skills/`. Validates before installing. |
 | `/research` | Conduct multi-source research on any topic. Spawns parallel agents, synthesizes findings, produces a cited report. |
+
+## Use Cases
+
+**Build a deployment skill from scratch:**
+```
+/generate-skill a skill that deploys to AWS using CDK, runs tests first, and rolls back on failure
+```
+Asks up to 3 clarifying questions, generates SKILL.md + references, validates, saves to `output/deploy-aws/`.
+
+**Research-generate a skill in an unfamiliar domain:**
+```
+/research-generate-skill a skill that converts OpenAPI specs to Claude Code skills
+```
+Spawns 3-5 Sonnet agents to research OpenAPI patterns, existing converters, and common pitfalls. Produces a research brief + higher-quality skill.
+
+**Validate a skill you found online:**
+```
+/validate-skill ~/.claude/skills/some-community-skill
+```
+Runs 13+ checks (YAML format, naming, description quality, body length) and gives a PASS/WARN/FAIL report.
+
+**Improve your skill's activation rate:**
+```
+/improve-skill ~/.claude/skills/my-skill
+```
+Analyzes against best practices, generates 2-3 description variants with trigger keywords, applies approved changes with `.bak` backup.
+
+**Full pipeline — generate, polish, install:**
+```
+/generate-skill a skill that runs ESLint with auto-fix
+/validate-skill output/run-eslint
+/improve-skill output/run-eslint
+/implement-skill run-eslint
+```
+
+## Standard vs Research-First
+
+| | Standard | Research-First |
+|---|---------|----------------|
+| **Speed** | ~2 minutes | ~8 minutes |
+| **When to use** | Familiar domains, simple skills | Unfamiliar domains, complex skills |
+| **What it adds** | — | Parallel Sonnet agents research the domain before generating/improving |
+| **Output** | SKILL.md + references | SKILL.md + references + RESEARCH_BRIEF.md |
+| **Commands** | `/generate-skill`, `/improve-skill` | `/research-generate-skill`, `/research-improve-skill` |
+
+Use standard mode for quick iterations. Use research-first when quality matters more than speed or when you're building a skill in a domain you're not familiar with.
 
 ## Workflow
 
@@ -49,6 +101,34 @@ Generated skill is validated and saved to `output/`. Install globally with `/imp
         |
         v
 /implement-skill <name>         install to ~/.claude/skills/
+```
+
+## What Gets Generated
+
+Running `/generate-skill` or `/research-generate-skill` produces:
+
+```
+output/my-skill/
+├── SKILL.md              # Skill definition (frontmatter + instructions)
+├── RESEARCH_BRIEF.md     # Domain research findings (research-first only)
+├── references/           # Background knowledge (if needed)
+│   └── api-reference.md
+└── scripts/              # Automation scripts (if needed)
+    └── validate.py
+```
+
+Example SKILL.md frontmatter:
+
+```yaml
+---
+name: my-skill
+description: Does X when Y happens. Use when saying "do X", "run X", or "X this file".
+argument-hint: <input description>
+allowed-tools:
+  - Read
+  - Write
+  - Bash(python *)
+---
 ```
 
 ## Install to Other Projects
