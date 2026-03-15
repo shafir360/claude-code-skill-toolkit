@@ -63,6 +63,7 @@ If validation passes, proceed to install.
    - SKILL.md
    - references/ directory (if exists)
    - scripts/ directory (if exists)
+   - README.md (if exists)
    - assets/ directory (if exists)
 
 ```bash

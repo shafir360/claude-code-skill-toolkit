@@ -1,6 +1,5 @@
-# Generated skills (keep the directory, ignore contents)
-output/*
-!output/.gitkeep
+# Generated skills — committed to repo as a browsable gallery
+# output/ is tracked so generated skills are shared on GitHub
 
 # Backup files from improve-skill
 *.bak

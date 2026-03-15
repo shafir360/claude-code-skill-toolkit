@@ -131,6 +131,14 @@ allowed-tools:
 ---
 ```
 
+## Skill Gallery
+
+The [`output/`](output/) folder is a browsable gallery of generated skills. Each skill includes its own README with usage examples, installation instructions, and design decisions.
+
+Browse the gallery to find skills you can install directly, or use them as examples when building your own.
+
+To add a skill you've generated to the gallery, just commit it — `output/` is tracked by git.
+
 ## Install to Other Projects
 
 ```powershell
