@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: 'Conducts exhaustive, multi-layered research using two rounds of parallel investigation with tiered model strategy. Round 1 spawns broad-sweep Sonnet agents across 5-7 themes. An Opus gap-analysis identifies weak spots, then Round 2 launches targeted collectors plus a dedicated Opus skeptic agent that challenges majority findings. Produces comprehensive cited reports with per-finding confidence levels, contradiction analysis, and source credibility assessment. Use when the user says "deep research", "exhaustive research", "thorough investigation", "deep dive into", "comprehensive analysis", or needs research that goes beyond a quick overview.'
+description: 'Conducts exhaustive, multi-layered research using two rounds of parallel investigation with tiered model strategy. Round 1 spawns broad-sweep Sonnet agents across 4-6 themes. An Opus gap-analysis identifies weak spots, then Round 2 launches targeted collectors plus a dedicated Opus skeptic agent that challenges majority findings. Includes post-synthesis refinement and citation verification. Produces comprehensive cited reports with per-finding confidence levels, contradiction analysis, and source credibility assessment. Use when the user says "deep research", "exhaustive research", "thorough investigation", "deep dive into", "comprehensive analysis", or needs research that goes beyond a quick overview.'
 argument-hint: <topic or question>
 allowed-tools: Read, Write, Grep, Glob, WebSearch, WebFetch
 ---
@@ -11,7 +11,7 @@ You are conducting an exhaustive, multi-layered research investigation. This ski
 
 **Target: complete the entire pipeline in 10-12 minutes.**
 
-**Time budget**: Phase 1 ~1min | Phase 2 ~3min | Phase 3 ~1min | Phase 4 ~3min | Phase 5 ~2min | Phase 6-7 ~1.5min
+**Time budget**: Phase 1 ~1min | Phase 2 ~3min | Phase 3 ~1min | Phase 4 ~3min | Phase 5 ~2min | Phase 5b ~1min | Phase 6-7 ~1.5min
 
 Rate source credibility using the framework in [references/source-evaluation.md](references/source-evaluation.md).
 Use the report structure from [references/report-template.md](references/report-template.md).
@@ -20,7 +20,7 @@ Use the report structure from [references/report-template.md](references/report-
 
 ## Phase 1: Scope & Plan (~1 minute)
 
-Analyze the research topic and decompose it into **5-7 distinct research themes**. Each theme should cover a non-overlapping aspect of the topic.
+Analyze the research topic and decompose it into **4-6 distinct research themes**. Prefer fewer, deeper themes over more shallow ones. Each theme should cover a non-overlapping aspect of the topic.
 
 For each theme, define:
 - A clear research question (1 sentence)
@@ -56,7 +56,18 @@ Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in paralle
 - Each agent gets a unique theme and lens — NO overlap between agents
 - Each agent's prompt MUST include this instruction verbatim:
 
-"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs. IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
+"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Structure your response using these exact sections:
+
+FINDINGS:
+- [3-5 bullet points, one sentence each with an inline citation URL]
+
+SOURCES:
+- [Top 5 source URLs, each with a credibility rating: HIGH/MEDIUM/LOW]
+
+SURPRISES:
+- [Any contradictions, under-sourced claims, or unexpected discoveries — or 'None']
+
+Do NOT include source tables, contradiction tables, or lengthy analysis paragraphs. Keep each section concise. IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Each agent's prompt must also include:
 - The overall research topic
@@ -89,10 +100,25 @@ The agent's prompt MUST include:
 
 5. **Strongest Claims to Challenge**: Identify the 2-3 most confident/sweeping claims from Round 1 that the skeptic agent should specifically try to disprove or nuance.
 
-Return a structured list of:
-- 3-5 specific research targets for Round 2 collector agents (each with a clear question and why it matters)
-- 2-3 specific claims for the skeptic agent to challenge (with the exact claim text and why it needs scrutiny)
-- An updated confidence assessment of the overall research so far (what do we know well vs. poorly)
+Structure your response using these sections:
+
+WELL_COVERED:
+- [Aspects with 3+ agreeing sources]
+
+THIN_COVERAGE:
+- [Aspects with only 1 source — need Round 2 verification]
+
+CONTRADICTIONS:
+- [Specific conflicting findings with agents/sources involved]
+
+ROUND_2_TARGETS:
+- [3-5 specific research targets for collector agents, each with a clear question and why it matters]
+
+SKEPTIC_CHALLENGES:
+- [2-3 specific claims to challenge, with exact claim text and why it needs scrutiny]
+
+CONFIDENCE:
+- [Overall assessment of what we know well vs. poorly]
 
 IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
@@ -105,7 +131,7 @@ Each targets a specific gap identified in Phase 3. Their prompts MUST:
 - Reference the specific gap or question from the gap analysis
 - Include any relevant context from Round 1 findings that should inform their search
 - Follow citation chains: if Round 1 found a key source, the collector should search for papers/articles that cite or respond to it
-- Include the same data-collection instruction as Round 1 agents (verbatim block above)
+- Include the same data-collection instruction as Round 1 agents (verbatim block above), BUT raise the WebFetch limit to 3 calls (Round 2 agents do targeted deep dives and may need more full-page reads)
 - Include this additional instruction: "Also look for evidence that CONTRADICTS the prevailing findings from Round 1. Do not only seek confirming evidence."
 
 ### Skeptic Agent (1 **deep-researcher** agent, `model: "opus"`)
@@ -122,7 +148,7 @@ A dedicated adversarial agent that challenges the strongest Round 1 claims. Its 
 
 Even if you cannot disprove a claim, identify its limitations and boundary conditions. A finding that 'X is always true' should be tested — is it true in all contexts, for all populations, in all time periods?
 
-Challenge the majority position regardless of how confident it seems. Do not be swayed by the number of sources supporting a claim — look for quality counter-evidence.
+Challenge the majority position regardless of how confident it seems. Do not be swayed by the number of sources supporting a claim — look for quality counter-evidence. Every challenge MUST reference a specific source URL. Do not speculate without evidence — unsupported challenges will be discarded.
 
 Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: your challenges/counter-evidence for each claim (with citation URLs), and your top 5 source URLs with credibility ratings.
 
@@ -170,6 +196,20 @@ Return a structured synthesis document with:
 
 IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
+## Phase 5b: Refinement Pass (~1 minute)
+
+After synthesis, perform a quick self-critique of the synthesis output:
+
+1. Are there any HIGH-confidence findings backed by only 1 source? (Should be MEDIUM)
+2. Are there unresolved contradictions that could be clarified with one more search?
+3. Are there knowledge gaps where a targeted search could fill the hole?
+
+If **2 or more issues** are found, spawn 1-2 targeted **deep-researcher** agents with `model: "sonnet"` to fill the specific gaps. Their prompts should reference the exact gap from the synthesis and include the same structured output format as Round 1. Cap at 1 refinement round — do NOT iterate further.
+
+If the synthesis is clean (0-1 minor issues), skip directly to Phase 6.
+
+Integrate any refinement findings into the synthesis before proceeding.
+
 ## Phase 6: Report Generation (~1 minute)
 
 Using the synthesis from Phase 5, generate the full report following the template in [references/report-template.md](references/report-template.md).
@@ -188,10 +228,12 @@ Using the synthesis from Phase 5, generate the full report following the templat
 Quick quality review before presenting:
 
 1. **Citation audit**: Does every finding have a citation URL that came from an agent? Remove any that don't. NEVER generate a URL from memory.
-2. **Single-source flag**: Is any HIGH-confidence claim backed by only one source? Downgrade to MEDIUM.
-3. **LOW-credibility check**: Is any claim supported only by LOW-credibility sources? Mark as "unverified" or remove.
-4. **Contradiction completeness**: Are all contradictions between findings noted? Add any missed.
-5. **Human verification flag**: Are there findings where human expert review is essential? Flag them explicitly.
+2. **Citation-claim match**: For each critical finding, verify the claim attributed to the citation actually appeared in the agent's search results. If a claim seems too specific or too perfectly aligned with the narrative, flag it as potentially mismatched and downgrade confidence.
+3. **Single-source flag**: Is any HIGH-confidence claim backed by only one source? Downgrade to MEDIUM.
+4. **LOW-credibility check**: Is any claim supported only by LOW-credibility sources? Mark as "unverified" or remove.
+5. **Source diversity check**: Are findings over-reliant on a single source type (e.g., all blogs, all from one institution)? Note any diversity gaps.
+6. **Contradiction completeness**: Are all contradictions between findings noted? Add any missed.
+7. **Human verification flag**: Are there findings where human expert review is essential? Flag them explicitly.
 
 Present the final report to the user.
 
@@ -211,3 +253,5 @@ Then ask: "Would you like me to save this report to a file, dive deeper into any
 8. **If Round 1 returns fewer than 3 usable agent results**, skip Round 2 and note the limitation prominently in the report.
 9. **Contradiction section is ALWAYS present** — even if stating "No major contradictions found across [N] sources."
 10. **Flag when human expert verification is essential** — especially for claims about medical, legal, financial, or safety-critical topics.
+11. **Skeptic challenges MUST cite sources** — unsupported speculation degrades quality. Discard any skeptic challenge without a citation URL.
+12. **Post-synthesis refinement is capped at 1 round** — diminishing returns after 2 total refinement passes. Skip if synthesis has 0-1 minor issues.
