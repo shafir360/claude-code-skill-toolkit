@@ -1,6 +1,6 @@
 # Research Lenses for Deep Research Skill Improvement
 
-Research lenses define the angles from which agents investigate a skill's domain for improvement. Each lens targets a different type of insight. Use 5-7 lenses for the two-round deep research process.
+Research lenses define the angles from which agents investigate a skill's domain for improvement. Each lens targets a different type of insight. Use 4-6 lenses for the two-round deep research process.
 
 ## Lenses for Skill Improvement (Round 1: Broad Sweep)
 

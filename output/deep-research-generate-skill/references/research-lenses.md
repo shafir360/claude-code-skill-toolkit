@@ -1,6 +1,6 @@
 # Research Lenses for Deep Research Skill Generation
 
-Research lenses define the angles from which agents investigate a skill's domain. Each lens targets a different type of insight. Use 5-7 lenses for the two-round deep research process — pick the ones most relevant to the skill's domain.
+Research lenses define the angles from which agents investigate a skill's domain. Each lens targets a different type of insight. Use 4-6 lenses for the two-round deep research process — pick the ones most relevant to the skill's domain.
 
 ## Lenses for Skill Generation (Round 1: Broad Sweep)
 

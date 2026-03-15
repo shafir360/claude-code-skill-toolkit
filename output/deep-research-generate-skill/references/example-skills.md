@@ -17,7 +17,7 @@ allowed-tools: Read, Write, Grep, Glob, WebSearch, WebFetch
 You are conducting an exhaustive, multi-layered research investigation...
 
 ## Phase 1: Scope & Plan (~1 minute)
-[Decompose topic into 5-7 themes, present research plan]
+[Decompose topic into 4-6 themes, present research plan]
 
 ## Phase 2: Broad Sweep — Round 1 (~3 minutes)
 [Spawn Sonnet agents in parallel, one per theme]

@@ -37,8 +37,8 @@ The skill runs a 9-phase pipeline in ~15-17 minutes:
 | Phase | Time | Model | What Happens |
 |-------|------|-------|-------------|
 | 1. Requirements | ~1 min | Parent | Analyzes description, asks up to 3 clarifying questions |
-| 2. Research Plan | ~30s | Parent | Identifies 5-7 research themes with specific questions |
-| 3. Broad Sweep (R1) | ~3 min | Sonnet | 5-7 parallel agents collect domain data |
+| 2. Research Plan | ~30s | Parent | Identifies 4-6 research themes with specific questions |
+| 3. Broad Sweep (R1) | ~3 min | Sonnet | 4-6 parallel agents collect domain data using structured output |
 | 4. Gap Analysis | ~1 min | **Opus** | Identifies gaps, contradictions, claims to challenge |
 | 5. Deep Dives (R2) | ~3 min | Sonnet + **Opus** | 3-4 collectors target gaps + 1 skeptic challenges findings |
 | 6. Design Brief | ~1.5 min | **Opus** | Synthesizes into Enhanced Design Brief with confidence levels |

@@ -31,7 +31,7 @@ Do NOT skip any files — you need full context before researching.
 
 ## Phase 2: Research Plan (~30 seconds)
 
-Based on the skill's domain and purpose, identify **5-7 research themes**. Select lenses from [references/research-lenses.md](references/research-lenses.md):
+Based on the skill's domain and purpose, identify **4-6 research themes**. Prefer fewer, deeper themes over more shallow ones. Select lenses from [references/research-lenses.md](references/research-lenses.md):
 
 1. **Best-in-Class Examples** — best tools/skills in this domain to benchmark against
 2. **Domain Evolution** — whether best practices have changed since the skill was written
@@ -55,7 +55,18 @@ Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in paralle
 - Each agent gets a unique theme and lens — NO overlap between agents
 - Each agent's prompt MUST include this instruction verbatim:
 
-"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 500 words. Return ONLY: 3-5 key findings (one sentence each with an inline citation URL), and a list of your top 5 source URLs with credibility ratings (HIGH/MEDIUM/LOW). Do NOT include source tables, contradictions tables, or lengthy analysis paragraphs. IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
+"Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Structure your response using these exact sections:
+
+FINDINGS:
+- [3-5 bullet points, one sentence each with an inline citation URL]
+
+SOURCES:
+- [Top 5 source URLs, each with a credibility rating: HIGH/MEDIUM/LOW]
+
+SURPRISES:
+- [Any contradictions, under-sourced claims, or unexpected discoveries — or 'None']
+
+Do NOT include source tables, contradiction tables, or lengthy analysis paragraphs. Keep each section concise. IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
 Each agent's prompt must also include:
 - The skill's name, purpose, and domain from Phase 1
@@ -98,7 +109,7 @@ Each targets a specific gap identified in Phase 4. Their prompts MUST:
 - Reference the specific gap or question from the gap analysis
 - Include relevant context from Round 1 that should inform their search
 - Follow citation chains: search for papers/articles that cite or respond to key Round 1 sources
-- Include the same data-collection instruction as Round 1 (verbatim block above)
+- Include the same data-collection instruction as Round 1 (verbatim block above), BUT raise the WebFetch limit to 3 calls (Round 2 agents do targeted deep dives and may need more full-page reads)
 - Include: "Also look for evidence that CONTRADICTS the prevailing improvement suggestions from Round 1. The current skill might already be doing things the right way."
 
 ### Skeptic Agent (1 **deep-researcher** agent, `model: "opus"`)
@@ -110,7 +121,7 @@ A dedicated adversarial agent that challenges improvement assumptions. Its promp
 3. Check if the improvement suggestion is based on outdated or disputed best practices
 4. Consider whether the improvement adds complexity without proportional benefit
 
-Sometimes the best improvement is no change. Challenge every suggestion regardless of how reasonable it seems. Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: challenges/counter-evidence for each assumption (with citation URLs), and your top 5 source URLs with credibility ratings.
+Sometimes the best improvement is no change. Challenge every suggestion regardless of how reasonable it seems. Every challenge MUST reference a specific source URL. Do not speculate without evidence — unsupported challenges will be discarded. Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on 1-2 pages that truly need full-text reading. Do not exceed 2 WebFetch calls total. Keep your entire response under 600 words. Return: challenges/counter-evidence for each assumption (with citation URLs), and your top 5 source URLs with credibility ratings.
 
 IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
