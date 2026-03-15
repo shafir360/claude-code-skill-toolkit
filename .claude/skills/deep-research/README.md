@@ -36,11 +36,12 @@ The skill runs a 7-phase pipeline in ~10-12 minutes:
 
 | Phase | Time | Model | What Happens |
 |-------|------|-------|-------------|
-| 1. Scope & Plan | ~1 min | Parent | Decomposes topic into 5-7 themes, presents research plan for your review |
-| 2. Broad Sweep (Round 1) | ~3 min | Sonnet | 5-7 parallel agents collect data across all themes |
+| 1. Scope & Plan | ~1 min | Parent | Decomposes topic into 4-6 themes, presents research plan for your review |
+| 2. Broad Sweep (Round 1) | ~3 min | Sonnet | 4-6 parallel agents collect data using structured output (FINDINGS/SOURCES/SURPRISES) |
 | 3. Gap Analysis | ~1 min | **Opus** | Identifies gaps, contradictions, single-source claims, and 2-3 claims to challenge |
-| 4. Deep Dives (Round 2) | ~3 min | Sonnet + **Opus** | 3-4 collectors target gaps + 1 Opus skeptic challenges strongest claims |
+| 4. Deep Dives (Round 2) | ~3 min | Sonnet + **Opus** | 3-4 collectors target gaps (WebFetch 3) + 1 Opus skeptic challenges with cited evidence |
 | 5. Cross-Reference | ~2 min | **Opus** | Merges all findings, assigns per-finding confidence, resolves contradictions |
+| 5b. Refinement | ~1 min | Sonnet | Self-critique pass; spawns 1-2 gap-fill agents if needed (skipped if synthesis is clean) |
 | 6. Report | ~1 min | Parent | Generates full report from template |
 | 7. Self-Check | ~30s | Parent | Audits citations, flags single-source claims, verifies completeness |
 
@@ -101,13 +102,30 @@ Use `/deep-research` when you need to make a decision based on the research, whe
 | Grep | Search within fetched content |
 | Glob | Find relevant local files |
 
+## Safety: Anti-Recursion Guards
+
+All sub-agents are spawned as `deep-researcher` type (never `general-purpose`), which restricts their tool access to WebSearch, WebFetch, Read, Write, Grep, and Glob. This structurally prevents agents from spawning further sub-agents or invoking skills. Every agent prompt also includes an explicit anti-recursion instruction as defense-in-depth.
+
+## Timeout & Fallback Safety
+
+To prevent agent hangs and cascading timeouts:
+
+- **Round 1 timeout**: Maximum 10 minutes for parallel agent batch. If fewer than 3 agents return by deadline, Round 2 is skipped and the skill proceeds directly to synthesis.
+- **Round 2 timeout**: Maximum 8 minutes for collectors + skeptic agents. If agents don't complete by deadline, synthesis proceeds with available results.
+- **WebFetch fallback**: If a WebFetch request fails or times out, the agent automatically falls back to using the search snippet instead of blocking.
+- **Replacement agent cap**: If Round 1 returns fewer than 3 agents, at most one replacement batch is launched. If still fewer than 3 after replacement, synthesis proceeds with available data and flags the limitation.
+- **Graceful degradation**: If Round 1 succeeds with 3+ agents, the skill can produce a valid report even if Round 2 fails entirely. Research quality degrades gracefully rather than failing completely.
+- **Overall pipeline timeout**: 15 minutes total. If any phase exceeds its time budget by 50%, remaining sub-phases are skipped and the skill proceeds to the next major phase.
+
+These safeguards ensure the skill completes in all scenarios, even when facing slow networks, hanging URLs, or partial agent failures.
+
 ## Limitations & Edge Cases
 
 - **Time cost**: ~10-12 minutes is significantly slower than a quick web search. Use `/research` or `/summarize` for simple questions.
 - **Internet required**: Both WebSearch and WebFetch need internet access.
 - **Citation quality**: While the skill mitigates AI citation failure (60%+ failure rate in studies), some citation mismatches may still occur. LOW-confidence findings are flagged.
 - **Recency**: Web search results may not include the very latest information on fast-moving topics.
-- **Depth vs breadth**: The 5-7 theme decomposition favors breadth. For narrow, deeply technical questions, a manual deep dive may be more effective.
+- **Depth vs breadth**: The 4-6 theme decomposition favors breadth. For narrow, deeply technical questions, a manual deep dive may be more effective.
 
 ## Sources & References
 
