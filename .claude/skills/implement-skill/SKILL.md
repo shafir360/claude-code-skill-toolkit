@@ -58,6 +58,33 @@ If validation passes, proceed to install.
 
 ## Phase 4: Install
 
+### 4a: Check for existing installation
+
+Check if `~/.claude/skills/<skill-name>/` already exists.
+
+**If it exists** — show a comparison:
+
+```markdown
+## Skill already installed globally
+
+**[skill-name]** exists at `~/.claude/skills/[skill-name]/`.
+
+| | Global (current) | Output (new) |
+|---|---|---|
+| Files | [count] | [count] |
+| SKILL.md lines | [count] | [count] |
+| Description | [first 80 chars] | [first 80 chars] |
+```
+
+Ask: "Overwrite the global version with the one from output/? (y/n)"
+
+- If user confirms → proceed to 4b
+- If user declines → abort with "Installation cancelled."
+
+**If it does not exist** — proceed to 4b.
+
+### 4b: Copy files
+
 1. Create the target directory: `~/.claude/skills/<skill-name>/`
 2. Copy all files from `output/<skill-name>/` to `~/.claude/skills/<skill-name>/`:
    - SKILL.md
