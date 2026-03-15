@@ -81,9 +81,11 @@ Each agent's prompt must also include:
 
 Rate source credibility using the framework in [references/source-evaluation.md](references/source-evaluation.md).
 
-Wait for all agents to return before proceeding.
+Wait for all agents to return before proceeding. **Maximum 10 minutes** for Round 1. If fewer than 3 agents return by deadline, skip Round 2 and proceed immediately to Phase 4 gap analysis.
 
-**If an agent fails or returns empty**: Skip it. If fewer than 3 agents return usable results, note the coverage gap and consider launching 1-2 replacement agents before proceeding.
+**If a WebFetch fails or times out**: Use the search snippet instead and continue.
+
+**If an agent fails or returns empty**: Skip it. If fewer than 3 agents return usable results, note the coverage gap and attempt replacement once before proceeding. If still fewer than 3 agents after replacement, proceed to Phase 4 and flag the limitation.
 
 ## Phase 4: Gap Analysis & Round 2 Planning (~1 minute)
 
@@ -131,7 +133,9 @@ Challenge the majority position regardless of how confident it seems. Every chal
 
 IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
-Wait for all Round 2 agents to return before proceeding.
+Wait for all Round 2 agents to return before proceeding. **Maximum 8 minutes** for Round 2. If agents don't complete by deadline, proceed immediately to synthesis with available results.
+
+**Graceful degradation**: If Round 1 completed with 3+ agents, synthesis can proceed even if Round 2 fails entirely.
 
 ## Phase 6: Synthesize into Enhanced Design Brief (~1.5 minutes)
 

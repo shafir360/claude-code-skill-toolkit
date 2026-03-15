@@ -106,6 +106,19 @@ Use `/deep-research` when you need to make a decision based on the research, whe
 
 All sub-agents are spawned as `deep-researcher` type (never `general-purpose`), which restricts their tool access to WebSearch, WebFetch, Read, Write, Grep, and Glob. This structurally prevents agents from spawning further sub-agents or invoking skills. Every agent prompt also includes an explicit anti-recursion instruction as defense-in-depth.
 
+## Timeout & Fallback Safety
+
+To prevent agent hangs and cascading timeouts:
+
+- **Round 1 timeout**: Maximum 10 minutes for parallel agent batch. If fewer than 3 agents return by deadline, Round 2 is skipped and the skill proceeds directly to synthesis.
+- **Round 2 timeout**: Maximum 8 minutes for collectors + skeptic agents. If agents don't complete by deadline, synthesis proceeds with available results.
+- **WebFetch fallback**: If a WebFetch request fails or times out, the agent automatically falls back to using the search snippet instead of blocking.
+- **Replacement agent cap**: If Round 1 returns fewer than 3 agents, at most one replacement batch is launched. If still fewer than 3 after replacement, synthesis proceeds with available data and flags the limitation.
+- **Graceful degradation**: If Round 1 succeeds with 3+ agents, the skill can produce a valid report even if Round 2 fails entirely. Research quality degrades gracefully rather than failing completely.
+- **Overall pipeline timeout**: 15 minutes total. If any phase exceeds its time budget by 50%, remaining sub-phases are skipped and the skill proceeds to the next major phase.
+
+These safeguards ensure the skill completes in all scenarios, even when facing slow networks, hanging URLs, or partial agent failures.
+
 ## Limitations & Edge Cases
 
 - **Time cost**: ~10-12 minutes is significantly slower than a quick web search. Use `/research` or `/summarize` for simple questions.

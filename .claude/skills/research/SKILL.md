@@ -19,6 +19,8 @@ Rate source credibility using the framework in [references/source-evaluation.md]
 
 Identify **3-5** distinct themes or angles to investigate. Keep scoping brief — spend under 30 seconds. List your themes, then immediately proceed to Phase 2.
 
+**Overall pipeline timeout: 5 minutes total.** Prefer returning partial results over returning nothing.
+
 ## Phase 2: Parallel Investigation (~3 minutes)
 
 Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in parallel in a single message. More agents = more coverage, and parallelism keeps it fast.
@@ -39,9 +41,13 @@ Each agent's prompt must also include:
 - Its specific assigned theme and research lens
 - 2-3 sub-questions for that theme
 
-Wait for all agents to return before proceeding.
+Wait for all agents to return before proceeding. **Maximum 10 minutes** for Round 1. If fewer than 3 agents return by deadline, proceed immediately with synthesis using available results.
 
-**If an agent fails or returns empty**: Skip it and proceed with the remaining agents' findings. If fewer than 2 agents return usable results, note the coverage gap in the Knowledge Gaps section and consider launching 1-2 replacement agents with adjusted search terms.
+**If a WebFetch fails or times out**: Use the search snippet instead and continue.
+
+**If an agent fails or returns empty**: Skip it and proceed with the remaining agents' findings. If fewer than 2 agents return usable results, note the coverage gap in the Knowledge Gaps section and attempt replacement once with adjusted search terms. If still fewer than 2 agents after replacement, proceed with synthesis and flag the limitation.
+
+**Graceful degradation**: If Round 1 completes with 2+ agents, synthesis can proceed even if replacement agents fail.
 
 ## Phase 3: Synthesize & Report (~1.5 minutes)
 

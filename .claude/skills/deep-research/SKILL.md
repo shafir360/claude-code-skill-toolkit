@@ -27,6 +27,8 @@ For each theme, define:
 - 2-3 sub-questions to guide the agent
 - A research lens (technical, skeptic/critic, industry/commercial, academic, historical, future outlook, user/practitioner)
 
+**Overall pipeline timeout: 15 minutes total.** Prefer returning partial results over returning nothing.
+
 Present the research plan to the user:
 
 ```
@@ -74,9 +76,11 @@ Each agent's prompt must also include:
 - Its specific assigned theme, lens, and 2-3 sub-questions
 - Instruction to note any surprising contradictions or claims that seem under-sourced
 
-Wait for all agents to return before proceeding.
+Wait for all agents to return before proceeding. **Maximum 10 minutes** for Round 1. If fewer than 3 agents return by deadline, skip Round 2 and proceed immediately to Phase 3 gap analysis.
 
-**If an agent fails or returns empty**: Skip it. If fewer than 3 agents return usable results, note the coverage gap and consider launching 1-2 replacement agents with adjusted search terms before proceeding.
+**If a WebFetch fails or times out**: Use the search snippet instead and continue.
+
+**If an agent fails or returns empty**: Skip it. If fewer than 3 agents return usable results, note the coverage gap and attempt replacement once with adjusted search terms before proceeding. If still fewer than 3 agents after replacement, proceed to Phase 3 and flag the limitation.
 
 ## Phase 3: Gap Analysis & Round 2 Planning (~1 minute)
 
@@ -154,7 +158,9 @@ Prioritize extracting facts from WebSearch result snippets. Only use WebFetch on
 
 IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly."
 
-Wait for all Round 2 agents to return before proceeding.
+Wait for all Round 2 agents to return before proceeding. **Maximum 8 minutes** for Round 2. If agents don't complete by deadline, proceed immediately to synthesis with available results.
+
+**Graceful degradation**: If Round 1 completed with 3+ agents, synthesis can proceed even if Round 2 fails entirely.
 
 ## Phase 5: Cross-Reference & Synthesize (~2 minutes)
 
@@ -204,7 +210,7 @@ After synthesis, perform a quick self-critique of the synthesis output:
 2. Are there unresolved contradictions that could be clarified with one more search?
 3. Are there knowledge gaps where a targeted search could fill the hole?
 
-If **2 or more issues** are found, spawn 1-2 targeted **deep-researcher** agents with `model: "sonnet"` to fill the specific gaps. Their prompts should reference the exact gap from the synthesis and include the same structured output format as Round 1. Cap at 1 refinement round — do NOT iterate further.
+If **2 or more issues** are found, spawn 1-2 targeted **deep-researcher** agents with `model: "sonnet"` to fill the specific gaps. Their prompts MUST include this instruction verbatim: "IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly." Their prompts should reference the exact gap from the synthesis and include the same structured output format as Round 1. Cap at 1 refinement round — do NOT iterate further.
 
 If the synthesis is clean (0-1 minor issues), skip directly to Phase 6.
 
