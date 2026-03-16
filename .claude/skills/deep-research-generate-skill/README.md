@@ -36,7 +36,7 @@ The skill runs a 9-phase pipeline in ~15-17 minutes:
 
 | Phase | Time | Model | What Happens |
 |-------|------|-------|-------------|
-| 1. Requirements | ~1 min | Parent | Analyzes description, asks up to 3 clarifying questions |
+| 1. Requirements | ~1 min | Parent | Reasons through intent, asks 2-4 clarifying questions, synthesizes requirements |
 | 2. Research Plan | ~30s | Parent | Identifies 4-6 research themes with specific questions |
 | 3. Broad Sweep (R1) | ~3 min | Sonnet | 4-6 parallel agents collect domain data using structured output |
 | 4. Gap Analysis | ~1 min | **Opus** | Identifies gaps, contradictions, claims to challenge |

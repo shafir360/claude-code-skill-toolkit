@@ -36,7 +36,7 @@ The skill runs a 7-phase pipeline in ~10-12 minutes:
 
 | Phase | Time | Model | What Happens |
 |-------|------|-------|-------------|
-| 1. Scope & Plan | ~1 min | Parent | Decomposes topic into 4-6 themes, presents research plan for your review |
+| 1. Scope & Plan | ~1 min | Parent | Reasons through research intent, asks 2-4 clarifying questions, decomposes into themes, presents plan |
 | 2. Broad Sweep (Round 1) | ~3 min | Sonnet | 4-6 parallel agents collect data using structured output (FINDINGS/SOURCES/SURPRISES) |
 | 3. Gap Analysis | ~1 min | **Opus** | Identifies gaps, contradictions, single-source claims, and 2-3 claims to challenge |
 | 4. Deep Dives (Round 2) | ~3 min | Sonnet + **Opus** | 3-4 collectors target gaps (WebFetch 3) + 1 Opus skeptic challenges with cited evidence |

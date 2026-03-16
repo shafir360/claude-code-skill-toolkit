@@ -21,7 +21,27 @@ You are creating a new Claude Code skill backed by exhaustive two-round research
 
 ## Phase 1: Requirements (~1 minute)
 
-Analyze the user's description and determine:
+### 1a: Understand intent
+
+Before analyzing dimensions, reason through the user's request:
+
+- What domain is this skill in? What are similar existing tools or workflows?
+- What implicit assumptions is the user making? (audience, environment, scale)
+- What are the most likely ways this request could be misunderstood?
+- What design choices would the user probably care about but hasn't mentioned? (output format, scope boundaries, error handling, integration points)
+- Which aspects of this domain are most uncertain and would benefit from research?
+
+Present a brief summary (3-5 sentences) of your understanding to the user.
+
+### 1b: Clarify
+
+Based on your analysis, ask **2-4 targeted clarifying questions** that surface things the user may not have considered — scope boundaries, edge cases, output format preferences, or implicit assumptions worth confirming. Bias toward asking rather than assuming. Only skip questions if the request is truly unambiguous and fully specified.
+
+**Wait for the user's response before continuing.**
+
+### 1c: Requirements synthesis
+
+With the user's answers incorporated, determine:
 
 1. **Purpose**: What does this skill do? (one sentence)
 2. **Trigger scenarios**: When should a user invoke this? (3-5 scenarios)
@@ -30,8 +50,6 @@ Analyze the user's description and determine:
 5. **Tools needed**: Which tools does this skill require? (Read, Write, Bash, WebSearch, etc.)
 6. **Complexity**: Simple (single-phase), moderate (multi-phase), or complex (agents, scripts)?
 7. **Task fragility**: High freedom (creative), medium (preferred pattern), or low (critical/exact)?
-
-If the description is vague, ambiguous, or contains contradictory requirements, ask **at most 3** targeted clarifying questions. Do not ask more — infer reasonable defaults for anything unclear.
 
 Present the requirements summary and get user confirmation before proceeding.
 

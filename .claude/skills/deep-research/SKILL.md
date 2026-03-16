@@ -20,7 +20,27 @@ Use the report structure from [references/report-template.md](references/report-
 
 ## Phase 1: Scope & Plan (~1 minute)
 
-Analyze the research topic and decompose it into **4-6 distinct research themes**. Prefer fewer, deeper themes over more shallow ones. Each theme should cover a non-overlapping aspect of the topic.
+### 1a: Understand research intent
+
+Before decomposing into themes, reason through the user's request:
+
+- What is the user actually trying to learn or decide? What would a useful answer look like?
+- What implicit scope does the request assume? (breadth vs. depth, time horizon, technical level)
+- What are the most likely ways this topic could be scoped too broadly or too narrowly?
+- What angles or perspectives would be most valuable for this specific topic?
+- What aspects are most likely to have conflicting sources or require adversarial scrutiny?
+
+Present a brief summary (3-5 sentences) of your understanding of the research question to the user.
+
+### 1b: Clarify scope
+
+Based on your analysis, ask **2-4 targeted clarifying questions** about scope, depth, or perspective — for example, whether they want a broad survey or a focused investigation, what decisions the research will inform, whether certain angles matter more than others, or what level of technical depth is appropriate. Bias toward asking rather than assuming. Only skip questions if the research question is precise and fully specified.
+
+**Wait for the user's response before continuing.**
+
+### 1c: Research plan
+
+With the user's answers incorporated, decompose the topic into **4-6 distinct research themes**. Prefer fewer, deeper themes over more shallow ones. Each theme should cover a non-overlapping aspect of the topic.
 
 For each theme, define:
 - A clear research question (1 sentence)

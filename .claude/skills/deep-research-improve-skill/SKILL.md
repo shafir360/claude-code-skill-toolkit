@@ -20,14 +20,33 @@ You are analyzing an existing Claude Code skill and improving it with exhaustive
 
 ## Phase 1: Read and Understand (~30 seconds)
 
+### 1a: Read skill files
+
 Read the entire skill directory:
 
 1. Read SKILL.md (frontmatter + body)
 2. List and read all files in references/ (if exists)
 3. List and read all files in scripts/ (if exists)
-4. Note the skill's purpose, domain, target use cases, and overall approach
 
 Do NOT skip any files — you need full context before researching.
+
+### 1b: Assess improvement potential
+
+Now that you have read the skill, reason through it:
+
+- What is this skill's core purpose and domain? How well does the current implementation serve it?
+- What are the most likely quality gaps? (description, structure, instruction clarity, error handling, missing patterns)
+- What implicit constraints should be preserved? (the skill's personality, its users' expectations, integration points)
+- What improvements would have the highest impact relative to effort?
+- Which aspects of this skill's domain are most uncertain and would benefit from research?
+
+Present a brief summary (3-5 sentences) of the skill's current state and your initial impression to the user.
+
+### 1c: Clarify improvement scope
+
+Based on your assessment, ask **2-4 targeted clarifying questions** about the user's improvement priorities — which aspects matter most, whether there are constraints on what can change, whether they want conservative fixes or aggressive restructuring, or any context about how the skill is used in practice. Bias toward asking rather than assuming. Only skip questions if the improvement need is obvious and unambiguous.
+
+**Wait for the user's response before continuing.**
 
 ## Phase 2: Research Plan (~30 seconds)
 

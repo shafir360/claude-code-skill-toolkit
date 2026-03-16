@@ -37,10 +37,10 @@ That's it. The skill is validated and saved to `output/`. Install it globally wi
 
 | Command | Tier | Time | Description |
 |---------|------|------|-------------|
-| `/generate-skill` | Standard | ~2 min | Create a skill from a plain-English description. Gathers requirements, generates SKILL.md + references + scripts, auto-validates. |
+| `/generate-skill` | Standard | ~2 min | Create a skill from a plain-English description. Reasons through intent, asks clarifying questions, generates SKILL.md + references + scripts, auto-validates. |
 | `/research-generate-skill` | Research | ~8 min | Research-first generation. Spawns parallel Sonnet agents to investigate the domain, then generates informed by findings. |
 | `/deep-research-generate-skill` | Deep Research | ~15 min | Two-round research with tiered models. Opus gap analysis + skeptic agent. Produces skills with per-finding confidence levels. |
-| `/improve-skill` | Standard | ~3 min | Analyze a skill against best practices. Categorizes issues by priority, applies approved changes with `.bak` backup. |
+| `/improve-skill` | Standard | ~3 min | Reads skill, reasons about improvements, asks priorities, then analyzes against best practices. Applies approved changes with `.bak` backup. |
 | `/research-improve-skill` | Research | ~8 min | Research-first improvement. Finds best-in-class examples and domain-specific gaps before suggesting changes. |
 | `/deep-research-improve-skill` | Deep Research | ~15 min | Two-round improvement with Opus skeptic that challenges improvement assumptions — defends the current approach when it's already optimal. |
 
@@ -50,8 +50,8 @@ That's it. The skill is validated and saved to `output/`. Install it globally wi
 |---------|------|-------------|
 | `/validate-skill` | ~30s | Read-only checker. 13+ deterministic checks via Python script + qualitative assessment. |
 | `/implement-skill` | ~10s | Install a generated skill from `output/` to `~/.claude/skills/`. Validates before installing. |
-| `/research` | ~5 min | Multi-source research on any topic. Parallel Sonnet agents, synthesized cited report. |
-| `/deep-research` | ~12 min | Exhaustive two-round research. Broad sweep, Opus gap analysis, targeted dives + Opus skeptic. Per-finding confidence levels. |
+| `/research` | ~5 min | Multi-source research on any topic. Reasons through intent, clarifies scope, then spawns parallel Sonnet agents for synthesized cited report. |
+| `/deep-research` | ~12 min | Exhaustive two-round research. Reasons through intent, clarifies scope, then broad sweep, Opus gap analysis, targeted dives + Opus skeptic. Per-finding confidence levels. |
 
 ## How It Works
 

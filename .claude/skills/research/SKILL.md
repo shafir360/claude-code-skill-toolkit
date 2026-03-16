@@ -17,7 +17,26 @@ Rate source credibility using the framework in [references/source-evaluation.md]
 
 ## Phase 1: Scope (~30 seconds)
 
-Identify **3-5** distinct themes or angles to investigate. Keep scoping brief — spend under 30 seconds. List your themes, then immediately proceed to Phase 2.
+### 1a: Understand research intent
+
+Before identifying themes, reason through the user's request:
+
+- What is the user actually trying to learn or decide? What would a useful answer look like?
+- What implicit scope does the request assume? (breadth vs. depth, time horizon, technical level)
+- What are the most likely ways this topic could be scoped too broadly or too narrowly?
+- What angles or perspectives would be most valuable for this specific topic?
+
+Present a brief summary (3-5 sentences) of your understanding of the research question to the user.
+
+### 1b: Clarify scope
+
+Based on your analysis, ask **2-3 targeted clarifying questions** about scope, depth, or perspective — for example, whether they want a broad survey or a focused investigation, what decisions the research will inform, or whether certain angles matter more than others. Bias toward asking rather than assuming. Only skip questions if the research question is precise and fully specified.
+
+**Wait for the user's response before continuing.**
+
+### 1c: Identify themes
+
+With the user's answers incorporated, identify **3-5** distinct themes or angles to investigate. Each theme should cover a non-overlapping aspect of the topic. List your themes, then immediately proceed to Phase 2.
 
 **Overall pipeline timeout: 5 minutes total.** Prefer returning partial results over returning nothing.
 

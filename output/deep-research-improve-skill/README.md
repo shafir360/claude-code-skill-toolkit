@@ -36,7 +36,7 @@ The skill runs a 10-phase pipeline in ~15-17 minutes:
 
 | Phase | Time | Model | What Happens |
 |-------|------|-------|-------------|
-| 1. Read & Understand | ~30s | Parent | Reads entire skill directory (SKILL.md + references + scripts) |
+| 1. Read & Assess | ~30s | Parent | Reads skill files, reasons about improvement potential, asks 2-4 clarifying questions |
 | 2. Research Plan | ~30s | Parent | Identifies 4-6 research themes using improvement lenses |
 | 3. Broad Sweep (R1) | ~3 min | Sonnet | 4-6 parallel agents benchmark against best-in-class tools |
 | 4. Gap Analysis | ~1 min | **Opus** | Identifies weak research areas + 2-3 improvement assumptions to challenge |
