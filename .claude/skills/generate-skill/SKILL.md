@@ -91,6 +91,7 @@ Save the generated skill to the `output/` folder in the project root:
 3. Numbered phases with imperative instructions
 4. Output Format section with exact markdown template in fenced code block
 5. Rules section with 5-8 specific, actionable constraints
+6. Anti-recursion guards: If the generated skill spawns agents (uses Agent tool), it MUST include: (a) `subagent_type: "deep-researcher"` on every Agent tool call, (b) leaf-node text instruction in every agent prompt ("Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent."), and (c) a hard cap on total agent count in the Rules section
 
 Read [references/example-skills.md](references/example-skills.md) for style reference.
 
@@ -248,3 +249,4 @@ If the user wants to install now, copy the entire skill directory from `output/[
 - Prefer concrete examples over abstract rules in generated instructions
 - Match instruction specificity to task fragility (high freedom for creative, low for critical)
 - Follow the user's existing skill style (see example-skills.md reference)
+- If the generated skill spawns agents, it MUST include anti-recursion guards: `subagent_type: "deep-researcher"` on every Agent call, leaf-node text instructions in every agent prompt, and a total agent budget cap. Never generate a skill that allows unbounded agent spawning.

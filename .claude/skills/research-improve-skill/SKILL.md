@@ -61,7 +61,7 @@ Pick the lenses most relevant to this skill's domain. List them with 2-3 sub-que
 
 ## Phase 3: Parallel Research (~3 minutes)
 
-Spawn one **deep-researcher** agent per theme. Launch ALL agents in parallel in a single message.
+Spawn one **deep-researcher** agent per theme. Launch ALL agents in parallel in a single message. Always specify `subagent_type: "deep-researcher"` in every Agent tool call — this subagent type has NO Agent tool and NO Skill tool available, providing structural enforcement that the text instructions below reinforce.
 
 **Critical rules for EVERY agent:**
 - Set `model: "sonnet"` on every agent
@@ -244,3 +244,4 @@ Present the summary:
 - Tag research-sourced improvements with `[Research]` for transparency
 - Only use URLs that agents explicitly returned — never fabricate citations
 - If research returns limited results, proceed with standard improvement and note the limitation
+- All research agents MUST specify `subagent_type: "deep-researcher"` in every Agent tool call — this structurally prevents sub-agents from spawning further agents. Never use a general-purpose subagent type.

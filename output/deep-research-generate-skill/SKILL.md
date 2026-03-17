@@ -72,7 +72,7 @@ Present the research plan briefly, then proceed immediately.
 
 ## Phase 3: Broad Sweep — Round 1 (~3 minutes)
 
-Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in parallel in a single message.
+Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in parallel in a single message. Always specify `subagent_type: "deep-researcher"` in every Agent tool call — this subagent type has NO Agent tool and NO Skill tool available, providing structural enforcement that the text instructions below reinforce.
 
 **Critical rules for EVERY Round 1 agent:**
 - Set `model: "sonnet"` on every agent (Sonnet handles search/fetch efficiently)
@@ -107,7 +107,7 @@ Wait for all agents to return before proceeding. **Maximum 10 minutes** for Roun
 
 ## Phase 4: Gap Analysis & Round 2 Planning (~1 minute)
 
-Spawn a single **deep-researcher** agent with `model: "opus"` to analyze Round 1 findings.
+Spawn a single **deep-researcher** agent with `model: "opus"` and `subagent_type: "deep-researcher"` to analyze Round 1 findings.
 
 The agent's prompt MUST include all Round 1 findings and these instructions:
 
@@ -130,7 +130,7 @@ IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skil
 
 Based on the gap analysis, spawn two types of agents in parallel in a single message:
 
-### Collector Agents (3-4 agents, `model: "sonnet"`)
+### Collector Agents (3-4 agents, `model: "sonnet"`, `subagent_type: "deep-researcher"`)
 Each targets a specific gap identified in Phase 4. Their prompts MUST:
 - Reference the specific gap or question from the gap analysis
 - Include relevant context from Round 1 that should inform their search
@@ -138,7 +138,7 @@ Each targets a specific gap identified in Phase 4. Their prompts MUST:
 - Include the same data-collection instruction as Round 1 (verbatim block above), BUT raise the WebFetch limit to 3 calls (Round 2 agents do targeted deep dives and may need more full-page reads)
 - Include: "Also look for evidence that CONTRADICTS the prevailing findings from Round 1."
 
-### Skeptic Agent (1 **deep-researcher** agent, `model: "opus"`)
+### Skeptic Agent (1 **deep-researcher** agent, `model: "opus"`, `subagent_type: "deep-researcher"`)
 A dedicated adversarial agent that challenges the strongest claims. Its prompt MUST include the 2-3 claims from Phase 4 and this instruction verbatim:
 
 "You are a skeptic and devil's advocate. Your job is NOT to confirm existing findings — it is to challenge them. For each claim:
@@ -157,7 +157,7 @@ Wait for all Round 2 agents to return before proceeding. **Maximum 8 minutes** f
 
 ## Phase 6: Synthesize into Enhanced Design Brief (~1.5 minutes)
 
-Spawn a single **deep-researcher** agent with `model: "opus"` to produce the final synthesis.
+Spawn a single **deep-researcher** agent with `model: "opus"` and `subagent_type: "deep-researcher"` to produce the final synthesis.
 
 The agent's prompt MUST include all Round 1 findings, the gap analysis, all Round 2 findings (collectors + skeptic), and these instructions:
 
@@ -255,6 +255,7 @@ Save the generated skill to `output/<skill-name>/`:
 4. Output Format section with exact markdown template in fenced code block
 5. Rules section with 5-10 specific, actionable constraints
 6. Only include instructions Claude wouldn't know from general training
+7. Anti-recursion guards: If the generated skill spawns agents, it MUST include `subagent_type: "deep-researcher"` on every Agent tool call, leaf-node text instructions in every agent prompt, and a total agent budget cap
 
 **Research incorporation**: Rules section MUST address at least 3 HIGH-confidence pitfalls from the Design Brief. Instruction phases SHOULD reflect domain best practices found in research. If the skeptic challenged a common approach, note the alternative.
 
@@ -416,6 +417,6 @@ Ask: "Would you like me to install this skill to `.claude/skills/` now, or keep 
 - Never generate skills with non-standard Python dependencies in scripts/
 - Rules section MUST address at least 3 HIGH-confidence pitfalls from the Design Brief
 - NEVER generate citation URLs from memory — only use URLs agents explicitly returned
-- Use tiered models: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic. All agents MUST use the **deep-researcher** subagent type — never use general-purpose.
+- Use tiered models: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic. All agents MUST specify `subagent_type: "deep-researcher"` in every Agent tool call — this is the structural enforcement that prevents sub-agents from spawning further agents. Never use a general-purpose subagent type.
 - If Round 1 returns fewer than 3 usable results, skip Round 2 and note the limitation
 - If research returns limited results, proceed with generation and note the limitation

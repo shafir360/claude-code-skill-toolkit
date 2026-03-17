@@ -42,7 +42,7 @@ With the user's answers incorporated, identify **3-5** distinct themes or angles
 
 ## Phase 2: Parallel Investigation (~3 minutes)
 
-Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in parallel in a single message. More agents = more coverage, and parallelism keeps it fast.
+Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in parallel in a single message. Always specify `subagent_type: "deep-researcher"` in every Agent tool call — this subagent type has NO Agent tool and NO Skill tool available, providing structural enforcement that the text instructions below reinforce. More agents = more coverage, and parallelism keeps it fast.
 
 **Critical rules for EVERY agent:**
 - Set `model: "sonnet"` on every agent (Sonnet handles search/fetch; Opus handles synthesis)
@@ -115,3 +115,4 @@ Ask the user: "Would you like me to save this report to a file or keep it in cha
 - Flag uncertainty explicitly
 - Include publication dates where known
 - Never fabricate or guess URLs — only use what agents returned
+- All research agents MUST specify `subagent_type: "deep-researcher"` in every Agent tool call — this structurally prevents sub-agents from spawning further agents. Never use a general-purpose subagent type.

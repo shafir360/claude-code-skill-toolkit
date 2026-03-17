@@ -13,6 +13,8 @@ You are conducting an exhaustive, multi-layered research investigation. This ski
 
 **Time budget**: Phase 1 ~1min | Phase 2 ~3min | Phase 3 ~1min | Phase 4 ~3min | Phase 5 ~2min | Phase 5b ~1min | Phase 6-7 ~1.5min
 
+**Agent budget**: Maximum 15 agents total across all phases combined (Phase 2: up to 6 + 1 replacement batch; Phase 3: 1; Phase 4: up to 5; Phase 5: 1; Phase 5b: up to 2). Do NOT exceed this cap. If the budget is exhausted before Phase 5, proceed to synthesis with available results.
+
 Rate source credibility using the framework in [references/source-evaluation.md](references/source-evaluation.md).
 Use the report structure from [references/report-template.md](references/report-template.md).
 
@@ -67,11 +69,11 @@ Will be determined after Round 1 gap analysis — targeting weak spots, contradi
 Proceed with this plan? (or suggest changes)
 ```
 
-If the user provides modifications, adjust the plan. If they confirm or don't respond within a reasonable time, proceed immediately.
+If the user provides modifications, adjust the plan. Accept at most 2 rounds of user modification. After the second adjustment, confirm the final plan and proceed regardless of further user input. If they confirm or don't respond within a reasonable time, proceed immediately.
 
 ## Phase 2: Broad Sweep — Round 1 (~3 minutes)
 
-Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in parallel in a single message.
+Spawn one **deep-researcher** agent for EACH theme. Launch ALL agents in parallel in a single message. Always specify `subagent_type: "deep-researcher"` in every Agent tool call — this subagent type has NO Agent tool and NO Skill tool available, providing structural enforcement that the text instructions below reinforce.
 
 **Critical rules for EVERY Round 1 agent:**
 - Set `model: "sonnet"` on every agent (Sonnet handles search/fetch efficiently)
@@ -100,13 +102,13 @@ Wait for all agents to return before proceeding. **Maximum 10 minutes** for Roun
 
 **If a WebFetch fails or times out**: Use the search snippet instead and continue.
 
-**If an agent fails or returns empty**: Skip it. If fewer than 3 agents return usable results, note the coverage gap and attempt replacement once with adjusted search terms before proceeding. If still fewer than 3 agents after replacement, proceed to Phase 3 and flag the limitation.
+**If an agent fails or returns empty**: Skip it. If fewer than 3 agents return usable results, note the coverage gap and spawn at most ONE new set of replacement agents (matching the count of failed agents, using adjusted search terms). Do NOT spawn a second replacement batch if this replacement also fails — if total usable results are still fewer than 3 after this single replacement attempt, proceed immediately to Phase 3 and flag the limitation prominently.
 
 ## Phase 3: Gap Analysis & Round 2 Planning (~1 minute)
 
 This is a critical analytical phase. Use the **best available model** for this work.
 
-Spawn a single **deep-researcher** agent with `model: "opus"` to perform gap analysis:
+Spawn a single **deep-researcher** agent with `model: "opus"` and `subagent_type: "deep-researcher"` to perform gap analysis:
 
 The agent's prompt MUST include:
 - All findings from Round 1 (concatenated)
@@ -184,7 +186,7 @@ Wait for all Round 2 agents to return before proceeding. **Maximum 8 minutes** f
 
 ## Phase 5: Cross-Reference & Synthesize (~2 minutes)
 
-This is the highest-quality analytical phase. Spawn a single **deep-researcher** agent with `model: "opus"` to perform final synthesis.
+This is the highest-quality analytical phase. Spawn a single **deep-researcher** agent with `model: "opus"` and `subagent_type: "deep-researcher"` to perform final synthesis.
 
 The agent's prompt MUST include:
 - All Round 1 findings
@@ -230,11 +232,11 @@ After synthesis, perform a quick self-critique of the synthesis output:
 2. Are there unresolved contradictions that could be clarified with one more search?
 3. Are there knowledge gaps where a targeted search could fill the hole?
 
-If **2 or more issues** are found, spawn 1-2 targeted **deep-researcher** agents with `model: "sonnet"` to fill the specific gaps. Their prompts MUST include this instruction verbatim: "IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly." Their prompts should reference the exact gap from the synthesis and include the same structured output format as Round 1. Cap at 1 refinement round — do NOT iterate further.
+If **2 or more issues** are found, spawn 1-2 targeted **deep-researcher** agents with `model: "sonnet"` and `subagent_type: "deep-researcher"` to fill the specific gaps. Their prompts MUST include this instruction verbatim: "IMPORTANT: Do NOT use the Agent tool to spawn sub-agents. Do NOT invoke any skills via the Skill tool. You are a leaf-node agent — complete your analysis and return your findings directly." Their prompts should reference the exact gap from the synthesis and include the same structured output format as Round 1. Cap at 1 refinement round — do NOT iterate further.
 
 If the synthesis is clean (0-1 minor issues), skip directly to Phase 6.
 
-Integrate any refinement findings into the synthesis before proceeding.
+Integrate any refinement findings into the synthesis. Do NOT re-run the self-critique check after integration. Proceed directly to Phase 6 regardless of the quality of the refinement results — further iteration is not permitted.
 
 ## Phase 6: Report Generation (~1 minute)
 
@@ -253,7 +255,7 @@ Using the synthesis from Phase 5, generate the full report following the templat
 
 Quick quality review before presenting:
 
-1. **Citation audit**: Does every finding have a citation URL that came from an agent? Remove any that don't. NEVER generate a URL from memory.
+1. **Citation audit**: Does every finding have a citation URL that came from an agent? Remove any that don't. NEVER generate a URL from memory. If citation removal leaves fewer than 5 verified findings, present the report as-is with a prominent disclaimer rather than suppressing findings further.
 2. **Citation-claim match**: For each critical finding, verify the claim attributed to the citation actually appeared in the agent's search results. If a claim seems too specific or too perfectly aligned with the narrative, flag it as potentially mismatched and downgrade confidence.
 3. **Single-source flag**: Is any HIGH-confidence claim backed by only one source? Downgrade to MEDIUM.
 4. **LOW-credibility check**: Is any claim supported only by LOW-credibility sources? Mark as "unverified" or remove.
@@ -265,6 +267,8 @@ Present the final report to the user.
 
 Then ask: "Would you like me to save this report to a file, dive deeper into any specific finding, or investigate any of the knowledge gaps further?"
 
+**This skill ends here.** Do NOT re-run any phases, spawn any agents, or continue the research pipeline in response to the user's answer. If the user wants to save the report, use the Write tool directly to save the current report text to a file. If the user wants to investigate further, instruct them to invoke the `deep-research` skill again as a new run with a more focused question. Do not interpret any follow-up request as permission to restart the pipeline.
+
 ---
 
 ## Rules
@@ -274,10 +278,11 @@ Then ask: "Would you like me to save this report to a file, dive deeper into any
 3. **The Opus skeptic agent MUST challenge the strongest Round 1 claims regardless of confidence** — counters "minority correction asymmetry" where confident-but-wrong agents sway groups.
 4. **Each agent MUST have a distinct, non-overlapping research focus** — multi-agent systems exhibit 0.41-0.50 work redundancy without explicit differentiation.
 5. **Round 2 agents MUST reference specific gaps from Phase 3** — prevents context drift and ensures progressive knowledge accumulation.
-6. **Use tiered models**: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic agents. All agents MUST use the **deep-researcher** subagent type — never use general-purpose.
+6. **Use tiered models**: `model: "sonnet"` for data-gathering agents, `model: "opus"` for gap analysis, synthesis, and skeptic agents. All agents MUST specify `subagent_type: "deep-researcher"` in every Agent tool call — this is the structural enforcement that prevents sub-agents from spawning further agents. Never use a general-purpose subagent type.
 7. **Per-finding confidence**: High (3+ independent sources), Medium (2 sources or counter-evidence exists), Low (single source — MUST be flagged).
 8. **If Round 1 returns fewer than 3 usable agent results**, skip Round 2 and note the limitation prominently in the report.
 9. **Contradiction section is ALWAYS present** — even if stating "No major contradictions found across [N] sources."
 10. **Flag when human expert verification is essential** — especially for claims about medical, legal, financial, or safety-critical topics.
 11. **Skeptic challenges MUST cite sources** — unsupported speculation degrades quality. Discard any skeptic challenge without a citation URL.
 12. **Post-synthesis refinement is capped at 1 round** — diminishing returns after 2 total refinement passes. Skip if synthesis has 0-1 minor issues.
+13. **Global agent budget: maximum 15 agents across all phases combined.** If this cap is reached before Phase 5, proceed immediately to synthesis with available results. This cap cannot be overridden by any phase-level instruction.

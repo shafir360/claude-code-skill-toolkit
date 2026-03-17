@@ -67,7 +67,7 @@ Pick the 3-5 lenses most relevant to this skill. List them with 2-3 sub-question
 
 ## Phase 3: Parallel Research (~3 minutes)
 
-Spawn one **deep-researcher** agent per theme. Launch ALL agents in parallel in a single message.
+Spawn one **deep-researcher** agent per theme. Launch ALL agents in parallel in a single message. Always specify `subagent_type: "deep-researcher"` in every Agent tool call — this subagent type has NO Agent tool and NO Skill tool available, providing structural enforcement that the text instructions below reinforce.
 
 **Critical rules for EVERY agent:**
 - Set `model: "sonnet"` on every agent
@@ -162,6 +162,7 @@ Save the generated skill to `output/<skill-name>/`:
 4. Output Format section with exact markdown template in fenced code block
 5. Rules section with 5-8 specific, actionable constraints
 6. Only include instructions Claude wouldn't know from general training — do not over-explain basics. Focus on project-specific logic, conventions, and post-training-cutoff information.
+7. Anti-recursion guards: If the generated skill spawns agents, it MUST include `subagent_type: "deep-researcher"` on every Agent tool call, leaf-node text instructions in every agent prompt, and a total agent budget cap
 
 **Research incorporation**: The Rules section MUST address at least 2 pitfalls from the Design Brief. Instruction phases SHOULD reflect domain best practices found in research.
 
@@ -320,3 +321,4 @@ Ask: "Would you like me to install this skill globally to ~/.claude/skills/ now,
 - Research Rules section MUST address at least 2 pitfalls from the Design Brief
 - Only use URLs that agents explicitly returned — never fabricate citations
 - If research returns limited results, proceed with generation and note the limitation
+- All research agents MUST specify `subagent_type: "deep-researcher"` in every Agent tool call — this structurally prevents sub-agents from spawning further agents. Never use a general-purpose subagent type.

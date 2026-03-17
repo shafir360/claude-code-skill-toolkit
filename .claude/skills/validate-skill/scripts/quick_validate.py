@@ -42,6 +42,18 @@ PERSON_PATTERNS = [
     (r"\byour\b", "second person 'your'"),
 ]
 
+# Agent spawning patterns (recursion risk detection)
+# These match imperative spawn instructions, not conditional guidance about generated skills
+AGENT_SPAWN_PATTERNS = [
+    re.compile(r"^#{1,3}\s.*spawn.*agent", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^Spawn\s+(one|a single|\d+).*agent", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^Launch\s+ALL\s+agents", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"spawn.*deep-researcher.*agent", re.IGNORECASE),
+]
+SUBAGENT_TYPE_PATTERN = re.compile(r"subagent_type", re.IGNORECASE)
+LEAF_NODE_PATTERN = re.compile(r"leaf.node agent|Do NOT use the Agent tool", re.IGNORECASE)
+AGENT_BUDGET_PATTERN = re.compile(r"agent budget|maximum.*agents|agent.*cap", re.IGNORECASE)
+
 # --- YAML Parsing ---
 
 def parse_yaml_simple(yaml_text):
@@ -311,6 +323,64 @@ def validate_skill(skill_path):
         if backslash_paths:
             checks.append(check("path_format", "WARN",
                 f"Body contains Windows-style paths: {backslash_paths[0][:50]}... — use forward slashes"))
+
+    # --- Check: recursion risk (agent spawning without guards) ---
+    spawns_agents = any(p.search(body) for p in AGENT_SPAWN_PATTERNS)
+    if spawns_agents:
+        has_subagent_type = bool(SUBAGENT_TYPE_PATTERN.search(body))
+        has_leaf_node = bool(LEAF_NODE_PATTERN.search(body))
+        has_budget_cap = bool(AGENT_BUDGET_PATTERN.search(body))
+
+        if not has_subagent_type:
+            checks.append(check("recursion_guard_structural", "WARN",
+                "Skill spawns agents but does not specify subagent_type — "
+                "add subagent_type: \"deep-researcher\" to prevent recursive agent spawning"))
+        else:
+            checks.append(check("recursion_guard_structural", "PASS",
+                "Skill spawns agents and includes subagent_type enforcement"))
+
+        if not has_leaf_node:
+            checks.append(check("recursion_guard_text", "WARN",
+                "Skill spawns agents but does not include leaf-node instructions — "
+                "add 'Do NOT use the Agent tool' text to agent prompts"))
+        else:
+            checks.append(check("recursion_guard_text", "PASS",
+                "Skill spawns agents and includes leaf-node text instructions"))
+
+        if not has_budget_cap:
+            checks.append(check("recursion_guard_budget", "INFO",
+                "Skill spawns agents but does not mention an agent budget cap — "
+                "consider adding a maximum agent count"))
+        else:
+            checks.append(check("recursion_guard_budget", "PASS",
+                "Skill spawns agents and includes an agent budget cap"))
+    else:
+        checks.append(check("recursion_risk", "PASS",
+            "Skill does not appear to spawn agents — no recursion risk"))
+
+    # --- Check: trigger phrase collision risk ---
+    if name and desc and isinstance(desc, str):
+        collision_phrases = [
+            (r"\bgenerate\b.*\bskill\b", "generate-skill"),
+            (r"\bimprove\b.*\bskill\b", "improve-skill"),
+            (r"\bresearch\b.*\bgenerate\b", "research-generate-skill"),
+            (r"\bresearch\b.*\bimprove\b", "research-improve-skill"),
+            (r"\bdeep research\b", "deep-research"),
+            (r"\bvalidate\b.*\bskill\b", "validate-skill"),
+        ]
+        desc_lower = desc.lower()
+        collisions = []
+        for pattern_str, skill_name in collision_phrases:
+            # Skip if this skill's name matches or contains the target skill name
+            if name != skill_name and skill_name not in name and re.search(pattern_str, desc_lower):
+                collisions.append(skill_name)
+        if collisions:
+            checks.append(check("trigger_collision", "WARN",
+                f"Description contains phrases that may trigger other skills: "
+                f"{', '.join(collisions)} — consider rewording to avoid accidental activation"))
+        else:
+            checks.append(check("trigger_collision", "PASS",
+                "No trigger phrase collision risk detected"))
 
     return checks
 
