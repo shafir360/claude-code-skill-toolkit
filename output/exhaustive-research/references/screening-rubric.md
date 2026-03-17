@@ -41,7 +41,10 @@ VERDICT RULES:
 
 Be aggressive in filtering. Quality over quantity. When in doubt, mark BORDERLINE (not PASS).
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly.
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool, Skill tool, WebSearch, or WebFetch under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- Return your verdicts directly as text. This is the ONLY action you should take.
 ```
 
 ## Condensed Prompt (for Haiku agents)
@@ -60,7 +63,10 @@ Density: HIGH=specific data/stats visible. MEDIUM=general discussion. LOW=listic
 
 Be aggressive. Quality over quantity. When in doubt, BORDERLINE not PASS.
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly.
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool, Skill tool, WebSearch, or WebFetch under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- Return your JSON array directly as text. This is the ONLY action you should take.
 ```
 
 ## Composite Score Formula

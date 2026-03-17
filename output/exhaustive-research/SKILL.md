@@ -17,6 +17,34 @@ Use checkpointing and progress reporting from [references/checkpointing.md](refe
 
 ---
 
+## Context Management (Critical for Deep/Exhaustive Depth)
+
+The orchestrator's context window fills rapidly during Exhaustive runs (~1,001K tokens without mitigation — overflows 1M context). To prevent overflow and "lost in the middle" quality degradation:
+
+**1. Save-and-release pattern**: After each agent wave completes in Phases 2-7:
+   - Save all agent responses to disk (mini-reports, intermediate reports, verdicts, etc.)
+   - Keep only a **compact manifest entry** in context: `batch_N.md — [1-sentence summary of key findings]`
+   - Do NOT hold full report text in context after saving to disk
+
+**2. Load-on-demand pattern**: When a downstream phase needs prior reports:
+   - Read reports from disk using the Read tool (not from context memory)
+   - Only load the specific subset needed (e.g., Phase 5 merge agents need 5 mini-reports, not all 40)
+   - After sending reports to an agent, release them from active consideration
+
+**3. Synthesis receives summaries, not full reports**: Phase 8 Opus synthesis should receive:
+   - The compact manifest (file paths + 1-line summaries for all reports)
+   - Full text of ONLY the highest-level tree outputs (Level 2 condensed reports, or Level 1 if no Level 2)
+   - Gap analysis output (full)
+   - Round 2 collector + skeptic results (full)
+   - NOT all 40 mini-reports, NOT all 8 intermediate reports
+
+**4. Context budget targets** (see [references/depth-config.md](references/depth-config.md)):
+   - Standard: stay under 300K tokens
+   - Deep: stay under 500K tokens
+   - Exhaustive: stay under 700K tokens (leaves 300K headroom in 1M context)
+
+---
+
 ## Pre-Phase: Resume Check
 
 Before starting, check if `{save_dir}/checkpoints/` exists from a prior run:
@@ -66,7 +94,9 @@ Store the confirmed path for Phase 9. Immediately create the output directory st
 
 ### 1c: Clarify research objective
 
-Ask **2-4 targeted questions** based on the topic and any bootstrap context:
+**Smart-skip**: If the user's initial prompt already specifies depth level, scope/focus, and target decision (e.g., "exhaustive research on X for Y purpose, focusing on Z"), skip clarification questions entirely and proceed to Phase 1d. Only ask questions for genuinely missing pieces. If bootstrap context is rich AND the original prompt specifies depth, skip Phase 1c.
+
+Ask **2-4 targeted questions** based on the topic and any bootstrap context (only for missing information):
 1. "Should I go wide across many subtopics, or deep into specific aspects?"
 2. "What decision or action will this research inform?"
 3. "Which aspects matter most?" (list 3-4 angles derived from bootstrap or topic)
@@ -86,13 +116,16 @@ Decompose the topic into **6-10 research themes** (more than deep-research's 4-6
 
 ### 2a: Generate diverse search queries
 
-Spawn Sonnet `deep-researcher` agents with `model: "sonnet"` — **1 agent** for Standard, **2** for Deep, **3-4** for Exhaustive. Each agent receives:
-- The research plan themes (divided across agents)
-- BOOTSTRAP_CONTEXT (so they avoid already-searched areas)
-- Instruction to generate 10-30 diverse queries using different perspectives (academic, practitioner, contrarian, historical)
-- The anti-recursion instruction from [references/tree-reduction.md](references/tree-reduction.md)
+Spawn **1** Sonnet `deep-researcher` agent with `model: "sonnet"` for all depth levels. The single agent receives:
+- ALL research plan themes
+- BOOTSTRAP_CONTEXT (so it avoids already-searched areas)
+- Instruction to generate diverse queries using academic, practitioner, contrarian, and historical perspectives
+- Query count target: 15-25 (Standard), 40-60 (Deep), 80-120 (Exhaustive)
+- The expanded anti-recursion instruction from [references/tree-reduction.md](references/tree-reduction.md)
 
-**Sub-timeout**: If query-gen agents don't return within 5 minutes, proceed with whatever queries have been collected.
+The query-gen agent prompt MUST end with: "Return only a numbered list of search query strings. Do NOT run searches yourself. Do NOT use Agent, Skill, WebSearch, or WebFetch tools. Just produce the query list."
+
+**Sub-timeout**: If the query-gen agent doesn't return within 5 minutes, proceed with whatever queries the orchestrator can generate from the research plan themes directly.
 
 Collect all queries. Deduplicate (exact match + semantic similarity). Cap at depth-level maximum from [references/depth-config.md](references/depth-config.md).
 
@@ -100,11 +133,13 @@ Collect all queries. Deduplicate (exact match + semantic similarity). Cap at dep
 
 Run all search queries using WebSearch. Collect all result snippets (URL + title + snippet text). Deduplicate by URL (exact match). This produces the candidate pool for screening.
 
-If the candidate pool is smaller than expected (< 50% of depth target), generate 10-20 additional queries with broader terms and search again. Do this at most once.
+If the candidate pool is smaller than expected (< 50% of depth target), generate 10-20 additional queries with broader terms and search again. Do this at most once. Track this retry with a flag in the Phase 2 checkpoint: `"search_retry_executed": true`. On resume from Phase 2: check this flag before retrying — if already true, skip retry and proceed to Phase 3.
 
 **Zero results abort**: If total search results < 10 across all queries (including retry), ABORT: "Search returned near-zero results. The topic may be too niche for web research. Suggest broadening the topic or trying a different angle."
 
 **Checkpoint**: Save search results to `checkpoints/phase2_search_results.json`. Emit Phase Recap (see [references/checkpointing.md](references/checkpointing.md)).
+
+**Context release (Deep/Exhaustive)**: After saving search results to disk, keep only the deduplicated candidate list in context (URL + title + composite score — ~1 line per source). Release full snippet text from active context. Phase 3 screeners will receive snippets by reading from `phase2_search_results.json`.
 
 ---
 
@@ -114,7 +149,9 @@ Spawn **Haiku `deep-researcher` agents** with `model: "haiku"`, one per batch of
 
 Each screener evaluates every snippet for relevance (1-10), credibility (HIGH/MEDIUM/LOW), and information density (HIGH/MEDIUM/LOW), returning a verdict: PASS, BORDERLINE, or FAIL.
 
-**After all screeners return:**
+**Wave-batching for Exhaustive depth**: At Exhaustive depth (8-12 screeners), launch agents in waves of 6. After each wave: collect all returned results, note any non-returning agents as timed-out (coverage gap), then start the next wave. For Standard and Deep depths (≤6 agents), launch all at once.
+
+**After all screeners (or waves) return:**
 1. Collect all PASS sources. Sort by composite score (relevance x credibility_weight x density_weight)
 2. Take top N sources where N = depth-level target from [references/depth-config.md](references/depth-config.md)
 3. If PASS count < target: promote BORDERLINE sources by composite score
@@ -125,10 +162,14 @@ Each screener evaluates every snippet for relevance (1-10), credibility (HIGH/ME
 
 **Early termination checks**:
 - If 0 sources pass screening: ABORT immediately. "No sources passed quality screening. The topic may be too niche or queries poorly targeted."
-- If <5 sources pass: offer (a) abbreviated single-round synthesis (skip tree reduction), (b) broaden topic and re-search, (c) abort.
+- If <5 sources pass: offer (a) abbreviated single-round synthesis (skip tree reduction), (b) generate 20 additional broader queries and re-search ONCE (this counts as the Phase 2b retry — no further retries allowed even if results are still sparse), (c) abort.
 - If <20% of candidates passed: pause and ask: "Only [N]% passed screening — queries may be poorly targeted. Continue with reduced depth, refine topic, or abort?"
 
 **Checkpoint**: Save screening verdicts to `checkpoints/phase3_screening_verdicts.json`. Emit Phase Recap.
+
+**Context release (Deep/Exhaustive)**: After saving verdicts, keep only the PASS source list in context (URLs + composite scores). Release BORDERLINE and FAIL verdict details from active context.
+
+**Early-start optimization (Deep/Exhaustive only)**: Phase 4 readers may begin spawning as soon as the first screening wave returns at least 5 PASS sources. Do not wait for all screeners to complete before starting the first reader wave. Track which sources have been assigned to readers to avoid double-reading. Continue screening remaining waves concurrently with reader waves.
 
 ---
 
@@ -136,7 +177,7 @@ Each screener evaluates every snippet for relevance (1-10), credibility (HIGH/ME
 
 ### 4a: Assign sources to reader agents
 
-Divide PASS sources into batches of 5-7. Spawn **Sonnet `deep-researcher` agents** with `model: "sonnet"`, one per batch. Each agent uses the Level 0 reader prompt from [references/tree-reduction.md](references/tree-reduction.md).
+Divide PASS sources into batches of 5-7. Each batch will be assigned to one Sonnet reader agent using the Level 0 reader prompt from [references/tree-reduction.md](references/tree-reduction.md).
 
 Each reader:
 - WebFetches up to 2 sources — prioritize the 2 highest composite scores from pre-screening (uses search snippets for the remaining 3-5). If WebFetch fails, continue with snippet only.
@@ -145,21 +186,45 @@ Each reader:
 - Produces a structured mini-report (max 800 words)
 - Saves mini-report to `{save_dir}/mini-reports/batch_{N}.md`
 
-Launch ALL reader agents in parallel in a single message.
+**Wave-batching (required for Exhaustive depth; optional for Deep; not needed for Standard):**
+
+For Exhaustive depth (25-50 reader agents), launch readers in **waves of 10**:
+
+```
+For each wave of up to 10 agents:
+  1. Spawn all agents in the wave in a single parallel message
+  2. Collect results as they return
+  3. Once all other agents in the wave have returned, the wave is effectively complete.
+     Any agent that has not returned by then is considered TIMED-OUT — do not wait further.
+     (The non-returning agent had the entire duration of all other agents' processing to respond.)
+  4. Mark timed-out agents as TIMED-OUT, note coverage gap, do NOT retry now
+  5. Write mini-reports to disk for all completed agents in this wave
+  6. **Context release**: After writing mini-reports to disk, release full report text from active context.
+     Keep only a manifest line per report: `batch_{N}.md — [1-line summary: top claim + source count]`
+     Do NOT reference the full mini-report text again until Phase 5 reads it from disk.
+  7. Emit a wave-level progress note: "Wave [N]/[total] complete: [X]/[10] agents returned"
+  8. Start next wave immediately — do not wait for timed-out agents
+```
+
+For Standard depth (≤8 agents) and Deep depth (≤20 agents): launch all agents at once in a single message (no wave overhead needed).
 
 ### 4b: Validation gate
 
-After all readers return, spawn **1-2 Haiku `deep-researcher` agents** with `model: "haiku"` (Sonnet for Exhaustive depth) to validate the mini-reports using the validation gate prompt from [references/tree-reduction.md](references/tree-reduction.md). Validators check STRUCTURAL properties only: citation URLs present? metadata block complete? word count in expected range (200-800)? response parseable into expected sections?
+**At Standard depth, validation gates are OPTIONAL** — the orchestrator may skip Phase 4b entirely to save cost, since downstream merge agents will catch structural issues during cross-referencing. At Deep/Exhaustive depth, validation gates remain active.
+
+After all readers return, divide mini-reports into batches of 5. Spawn **1 Haiku `deep-researcher` validator per batch** with `model: "haiku"` (Sonnet for Exhaustive depth) to validate using the validation gate prompt from [references/tree-reduction.md](references/tree-reduction.md). Validators check STRUCTURAL properties only: citation URLs present? metadata block complete? word count in expected range (200-800)? response parseable into expected sections?
 
 Reports marked REJECT are discarded. Reports marked FLAG are kept with warnings attached. Do NOT auto-reject based on semantic quality judgments — structural checks only, since automated semantic quality detection is only ~53% accurate and false positives can cascade.
 
 **Validator sub-timeout**: 5 min (Standard), 8 min (Deep), 12 min (Exhaustive). If validators don't return by sub-timeout, skip validation and mark all reports UNVALIDATED. Proceed to Phase 5.
 
-**Timeout**: If readers don't complete within phase timeout, proceed with available mini-reports. If fewer than 50% return, skip missing agents and note the coverage gap. **If 0 readers return (100% failure)**: save partial report from prior phases, notify user: "Phase 4 complete failure — all reader agents failed. Saving partial report." Do not continue.
+**Timeout**: With wave-batching, timed-out agents are handled wave by wave (see above) — never wait indefinitely. After all waves complete, if fewer than 50% of all reader agents returned, note the coverage gap. **If 0 readers return across all waves (100% failure)**: save partial report from prior phases, notify user: "Phase 4 complete failure — all reader agents failed. Saving partial report." Do not continue.
 
 Do NOT retry entire batches — each agent's output file is an implicit checkpoint; only agents with missing output files need re-running, and only once.
 
 **Checkpoint**: Save mini-report file paths to `checkpoints/phase4_mini_reports.json`. Emit Phase Recap with Agent Recap showing per-batch outcomes.
+
+**Early-start optimization (Exhaustive only)**: Phase 5 Level 1 merge agents may begin spawning as soon as 5 mini-reports are available from completed reader waves. Do not wait for all readers to complete. As more mini-reports complete, spawn additional merge agents. Track which mini-reports have been assigned to merge agents to avoid double-processing. Continue reader waves concurrently with merge waves.
 
 ---
 
@@ -167,7 +232,12 @@ Do NOT retry entire batches — each agent's output file is an implicit checkpoi
 
 ### 5a: Level 1 merge
 
-Group mini-reports into batches of 5. Spawn **Sonnet `deep-researcher` agents** with `model: "sonnet"`, one per batch. Each agent uses the Level 1 merge prompt from [references/tree-reduction.md](references/tree-reduction.md).
+Group mini-reports into batches of 5. For each batch:
+1. **Read the 5 mini-reports from disk** using Read tool: `{save_dir}/mini-reports/batch_{N}.md` through `batch_{N+4}.md`
+2. Send them to a Sonnet merge agent using the Level 1 merge prompt from [references/tree-reduction.md](references/tree-reduction.md)
+3. Receive the intermediate report response
+4. Save intermediate report to disk: `{save_dir}/intermediate/group_{N}.md`
+5. **Context release**: Release mini-report text and intermediate report text from active context. Keep only manifest: `group_{N}.md — [1-line summary]`
 
 Each merger:
 - Deduplicates claims across mini-reports
@@ -175,11 +245,11 @@ Each merger:
 - Checks for circular sourcing (multiple reports citing the same original)
 - Produces an intermediate report (max 1500 words)
 
-Launch ALL merge agents in parallel.
+**Wave-batching for Exhaustive depth**: At Exhaustive depth (6-10 merge agents), launch in waves of 5. After each wave: collect results, mark non-returning agents as timed-out, write `intermediate/group_{N}.md` for completed agents, start next wave. For Standard and Deep depths (≤5 agents), launch all at once.
 
 ### 5b: Validation gate (Deep/Exhaustive only)
 
-Spawn 1 Haiku `deep-researcher` validator with `model: "haiku"` (Sonnet for Exhaustive) to check intermediate reports. Sub-timeout: 5 min (Standard), 8 min (Deep), 12 min (Exhaustive). If exceeded, skip validation and proceed.
+Divide intermediate reports into batches of 5. Spawn 1 Haiku `deep-researcher` validator per batch with `model: "haiku"` (Sonnet for Exhaustive) to check intermediate reports. Sub-timeout: 5 min (Standard), 8 min (Deep), 12 min (Exhaustive). If exceeded, skip validation and proceed.
 
 ### 5c: Level 2 merge (Exhaustive only)
 
@@ -199,9 +269,16 @@ If any merge agent doesn't return within phase timeout, skip it. If fewer than 5
 
 ## Phase 6: Gap Analysis & Round 2 Planning (~3-10 minutes)
 
-Spawn a single **`deep-researcher` agent** — with `model: "sonnet"` for Standard depth, `model: "opus"` for Deep/Exhaustive — to analyze all intermediate reports.
+**Budget check**: Before Phase 6, estimate total tokens consumed so far (from checkpoint agent_stats). If consumed > 60% of depth-level token budget (Standard=750K, Deep=2.25M, Exhaustive=6M), warn user: "Token consumption is tracking high ([X]% of budget used before Round 2). Options: (a) Continue — may exceed budget, (b) Skip Round 2 and synthesize now with Round 1 data, (c) Abort." This is a pause, not a hard stop.
 
-The agent's prompt MUST include all intermediate reports and these instructions:
+Spawn a single **`deep-researcher` agent** with `model: "sonnet"` for all depth levels — to analyze all intermediate reports. (Gap analysis identifies gaps and claims for Round 2; it does not require Opus-level reasoning.)
+
+**Context-aware loading (Deep/Exhaustive)**: Do NOT pass all intermediate reports from context memory. Instead:
+- Read only the **highest-level tree outputs** from disk (Level 2 condensed reports if available, otherwise Level 1 intermediate reports)
+- Include the compact manifest of ALL reports (file paths + 1-line summaries) so the agent has visibility into the full scope
+- This keeps Phase 6 input to ~6-18K tokens instead of ~30K+
+
+The agent's prompt MUST include the reports read from disk and these instructions:
 
 "Analyze the intermediate research reports and identify:
 1. COVERAGE: Which aspects are well-covered (3+ sources)? Which are thin (single source)?
@@ -215,7 +292,14 @@ Return:
 - 3-5 specific claims for the skeptic (exact claim text + source)
 - Overall confidence assessment
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly."
+IMPORTANT: You are analyzing reports already collected. Do NOT use WebSearch, WebFetch, Agent, or Skill tools. Your gap analysis is based solely on the reports provided here. Note gaps in your output — the orchestrator (not you) will dispatch Round 2 agents to fill them.
+
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool or Skill tool under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- Do NOT use WebSearch or WebFetch under any circumstances.
+- If you identify a gap or missing piece, note it in your output — do NOT attempt to fill it yourself.
+- Return your findings directly as text. This is the ONLY action you should take."
 
 **Timeout**: If Opus doesn't return within phase timeout, skip Round 2 entirely. Proceed to Phase 8 synthesis with Round 1 data only. Note the limitation in the report.
 
@@ -225,22 +309,40 @@ You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findi
 
 ## Phase 7: Targeted Deep Dives — Round 2 (~10-40 minutes)
 
-Based on the gap analysis, spawn two types of agents in parallel in a single message:
+Based on the gap analysis, spawn two types of agents concurrently. Spawn collector waves AND skeptic agents in **separate messages** (never mix Opus skeptics with Sonnet collectors in the same spawn message). Skeptics receive Phase 6 claims (not collector output), so they run independently and in parallel with collectors. If a skeptic hangs, it does not block collectors, and vice versa.
 
 ### Collector agents (Sonnet)
 
-Spawn 3-10 **`deep-researcher` agents** with `model: "sonnet"` (count based on depth level). Each targets a specific gap from Phase 6. Their prompts MUST:
-- Reference the specific gap and why it matters
-- Include relevant context from Round 1 that should inform their search
-- Include the list of Phase 4 source URLs already read — instruct: "Before WebFetching, check if the URL was already read in Round 1. If so, reference that analysis instead of re-fetching."
-- Instruct: "Also look for evidence that CONTRADICTS prevailing Round 1 findings"
-- Allow up to 2 WebFetch calls (reduced from 3 to save tokens on already-covered territory)
-- Include the anti-recursion instruction
-- Keep response under 800 words
+Spawn 3-10 **`deep-researcher` agents** with `model: "sonnet"` (count based on depth level). At Exhaustive depth (8-10 collectors), use **waves of 5**: spawn 5, collect results (marking any non-returning agents as timed-out), then spawn the next 5. For Standard/Deep (≤6 collectors), launch all at once.
 
-### Skeptic agent(s) (Opus)
+Each collector agent prompt MUST follow this template:
 
-Spawn 1-2 **`deep-researcher` agents** with `model: "opus"` (2 for Exhaustive depth). Each receives specific claims from Phase 6 and this instruction:
+"Topic: [TOPIC-SLUG]. You are filling a specific research gap identified in Round 1.
+
+GAP: [specific gap from Phase 6]
+WHY IT MATTERS: [reason from Phase 6]
+CONTEXT FROM ROUND 1: [relevant findings that should inform your search]
+ALREADY-READ URLs (do NOT re-fetch these): [list of Phase 4 source URLs]
+
+Instructions:
+1. WebFetch up to 2 new sources that address this gap. Prioritize sources NOT in the already-read list.
+2. Also look for evidence that CONTRADICTS prevailing Round 1 findings.
+3. Extract key claims, data points, and statistics with citation URLs.
+
+Keep response under 800 words.
+
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool or Skill tool under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- You MAY use WebFetch for up to 2 calls. Do NOT use WebSearch.
+- If you identify further gaps, note them in your output — do NOT attempt to research further.
+- Return your findings directly as text. This is the ONLY action you should take."
+
+### Skeptic agent(s) (Opus) — spawn concurrently with collectors
+
+Spawn 1-2 **`deep-researcher` agents** with `model: "opus"` (2 for Exhaustive depth) in a separate message from collectors. If Opus skeptic agents don't return by the time all collector waves have completed and been processed: skip skeptics, note limitation ("Skeptic review skipped — agent did not return"), and proceed to Phase 8. Do NOT wait indefinitely for Opus.
+
+Each skeptic receives specific claims from Phase 6 and this instruction:
 
 "You are a skeptic. Your job is NOT to confirm — it is to challenge. For each claim:
 1. Search for evidence that CONTRADICTS or NUANCES the claim
@@ -249,9 +351,14 @@ Spawn 1-2 **`deep-researcher` agents** with `model: "opus"` (2 for Exhaustive de
 4. Check for circular sourcing: do multiple 'independent' sources trace to one original?
 5. Consider whether the claim overgeneralizes
 
-Every challenge MUST reference a specific source URL. Unsupported challenges will be discarded. Do not exceed 2 WebFetch calls. Keep response under 600 words.
+Every challenge MUST reference a specific source URL. Unsupported challenges will be discarded. Keep response under 600 words.
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly."
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool or Skill tool under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- You MAY use WebFetch for up to 2 calls to find counter-evidence. Do NOT use WebSearch.
+- If you identify additional gaps, note them in your output — do NOT attempt to research further.
+- Return your findings directly as text. This is the ONLY action you should take."
 
 **Timeout**: If Round 2 agents don't complete within phase timeout, proceed with available results. If Round 1 completed with 3+ intermediate reports, synthesis can proceed even if Round 2 fails entirely.
 
@@ -263,7 +370,15 @@ You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findi
 
 Spawn a single **`deep-researcher` agent** with `model: "opus"` to produce the final synthesis.
 
-The agent receives: ALL intermediate reports from tree reduction, gap analysis, ALL Round 2 findings, skeptic results, and BOOTSTRAP_CONTEXT.
+**Context-aware loading**: The agent receives (read from disk, NOT from orchestrator context memory):
+- **Compact manifest** of ALL mini-reports and intermediate reports (file paths + 1-line summaries — gives visibility into full scope)
+- **Full text of ONLY the highest-level tree outputs** (Level 2 condensed reports if available, otherwise Level 1 intermediate reports — read from disk)
+- **Gap analysis output** (full — read from `checkpoints/phase6_gap_analysis.json`)
+- **Round 2 collector results** (full — read from `{save_dir}/round2/collector_{N}.md`)
+- **Skeptic results** (full — read from `{save_dir}/round2/skeptic.md`)
+- **BOOTSTRAP_CONTEXT** (if available)
+
+This keeps Phase 8 input to ~40-60K tokens instead of ~200K+.
 
 "Synthesize all research into a final report. Perform:
 1. CROSS-VALIDATION: For each finding, count independent sources. Note agreements and conflicts.
@@ -277,11 +392,21 @@ Format each contradiction as a row: `[Claim] | [Position A + source URL] | [Posi
 
 Return: 20-40 key findings in the format above, contradiction table, knowledge gaps, and confidence assessment.
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly."
+IMPORTANT: Synthesize only from the data provided here. Do NOT use WebSearch, WebFetch, Agent, or Skill tools. If you identify knowledge gaps, list them in your output — the orchestrator will handle follow-up. Do NOT attempt to fill gaps by fetching or researching further.
+
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool or Skill tool under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- Do NOT use WebSearch or WebFetch under any circumstances.
+- Return your synthesis directly as text. This is the ONLY action you should take."
 
 **Synthesis validation**: If Opus returns fewer than 3 key findings or an empty/malformed response, fall back to using the highest-level intermediate reports from Phase 5 as the basis for the report. Log: "Opus synthesis produced insufficient output; using tree-merged results instead."
 
-**Timeout**: If Opus synthesis fails, the orchestrator produces a simpler report by concatenating intermediate reports with a brief executive summary.
+**Timeout / no-return fallback**: If Opus synthesis does not return (rate limit, context overflow, or other failure), do NOT wait indefinitely. Instead:
+1. Take the top 5 intermediate reports from Phase 5 tree reduction
+2. Write a brief orchestrator-authored executive summary (3-5 paragraphs) covering the main convergent findings, contradictions, and knowledge gaps visible in those reports
+3. Mark the report title as `[PARTIAL — Opus synthesis did not complete]`
+4. Proceed to Phase 9 with this fallback synthesis
 
 ---
 
@@ -330,7 +455,7 @@ Display in chat:
 5. **Tree depth hard cap: 3 levels** — even if group math suggests more, stop at 3. Pass remaining reports directly to Opus synthesis.
 6. **Skip-and-note over retry storms** — max 1 retry per agent, only on timeout (never on bad output). If an agent returns bad output, skip it and note the coverage gap. Retrying bad output risks cost explosions (documented: $10+/day from naive retries on large contexts). Never retry entire batches.
 7. **Phase timeouts are hard** — if an agent hasn't returned by phase timeout, skip it and proceed. No agent is waited on indefinitely. Overall hard caps: Standard=75min, Deep=150min, Exhaustive=270min.
-8. **Use tiered models per depth level**: Haiku for screening and validation gates (Sonnet validation for Exhaustive only). Sonnet for data collection, merging, query generation, and gap analysis at Standard depth. Opus for gap analysis (Deep/Exhaustive), skeptic, and final synthesis. See [references/depth-config.md](references/depth-config.md) for the full per-phase model table. Never use Haiku for synthesis or Opus for search.
+8. **Use tiered models per depth level**: Haiku for screening and validation gates (Sonnet validation for Exhaustive only). Sonnet for data collection, merging, query generation, and gap analysis (all depths). Opus for skeptic and final synthesis only. See [references/depth-config.md](references/depth-config.md) for the full per-phase model table. Never use Haiku for synthesis or Opus for search.
 9. **Validation gates are structural-only** — check: citation URLs present? metadata block complete? word count in range? sections parseable? Do NOT auto-reject based on semantic quality judgments (only ~53% accurate). Flag suspicious outputs for downstream awareness, don't kill them.
 10. **Confidence is source-agreement-based, not self-reported** — LLMs have <30% calibration accuracy. Count independent sources per claim: 3+ = HIGH, 2 = MEDIUM, 1 = LOW.
 11. **Deduplication is soft-merge** — flag duplicates and merge unique claims, don't hard-delete. Over-deduplication reduces source diversity.
@@ -338,3 +463,8 @@ Display in chat:
 13. **Checkpoint after every phase** — save a JSON checkpoint file per [references/checkpointing.md](references/checkpointing.md). Each agent's output file is an implicit sub-phase checkpoint. On failure, only re-run agents whose output files are missing.
 14. **Emit Phase Recap after every phase** — display phase name, agent counts, source counts, elapsed time, issues, and next phase per the template in [references/checkpointing.md](references/checkpointing.md). Users need visibility during 1-4 hour runs.
 15. **Pause on high failure rates** — if >30% of agents in any phase fail, or <20% of sources pass screening, pause and ask the user before continuing. Do not silently degrade on catastrophic failures.
+16. **Never wait indefinitely for a single non-returning agent** — when spawning agents in parallel waves, once all other agents in the wave have returned, the wave is complete. Any agent that has not returned by then is TIMED-OUT (it had the entire duration of all other agents' processing to respond). Write outputs for completed agents, note skipped agents as coverage gaps, and proceed immediately. Apply to ALL parallel-spawn phases (2, 3, 4, 5, 7). Never hold an entire wave hostage to one non-responding agent.
+17. **Every agent prompt MUST explicitly forbid WebSearch and WebFetch UNLESS those tools are part of the agent's defined task.** Only reader agents (Phase 4) and collector/skeptic agents (Phase 7) are permitted to use WebFetch (max 2 calls each). All other agents — query-gen (Phase 2), screeners (Phase 3), merge agents (Phase 5), validators (Phase 4b/5b), gap analysis (Phase 6), synthesis (Phase 8) — MUST include "Do NOT use WebSearch or WebFetch" in their prompts. If an agent cannot verify a claim, it notes uncertainty in its output — it does not fetch.
+18. **Phase 0 (Bootstrap) MUST NOT invoke any tools** — it only parses text the user pasted into their initial prompt, or reads a file path the user specified. Do NOT invoke Agent, Skill, WebSearch, or WebFetch during bootstrap ingestion. If the user wants to pass /deep-research output, they must paste it or provide a file path.
+19. **Phase 7 is a single pass** — collector and skeptic results do NOT trigger additional rounds of data collection. Any new gaps or contradictions identified by skeptics are documented in the report as limitations, not fed back into a new collector round. There is no Phase 7b.
+20. **Context-aware streaming (Deep/Exhaustive)** — the orchestrator MUST NOT hold all agent responses in context simultaneously. After each wave of agents completes and responses are saved to disk, release full report text from active context and keep only a compact manifest (file path + 1-line summary). When downstream phases need prior reports, read them from disk using the Read tool. Phase 8 synthesis receives only the highest-level tree outputs (not all mini-reports), plus the manifest, gap analysis, and Round 2 results. This prevents context overflow (~1,001K without mitigation) and "lost in the middle" quality degradation. See the Context Management section for full details.

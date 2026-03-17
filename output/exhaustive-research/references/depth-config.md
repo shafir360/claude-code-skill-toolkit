@@ -19,12 +19,19 @@ The user selects depth via argument (e.g., `/exhaustive-research deep: <topic>`)
 | **Validation gates** | 1 (after leaves) | 2 (leaves + merge) | 3 (leaves + each merge) |
 | **Round 2 collectors** | 3-4 | 5-6 | 8-10 |
 | **Skeptic agents (Opus)** | 1 | 1 | 2 |
-| **Query gen agents** | 1 | 2 | 3-4 |
-| **Opus calls total** | 1 (final) | 2 (mid + final) | 3 (plan + mid + final) |
+| **Query gen agents** | 1 | 1 | 1 |
+| **Opus calls total** | 1 (final synthesis) | 2 (skeptic + final) | 3 (2 skeptics + final) |
 | **Total agents** | ~15-20 | ~30-40 | ~55-80 |
 | **Per-phase timeout** | 15 min | 25 min | 40 min |
 | **Overall hard cap** | 75 min | 150 min | 270 min |
 | **Estimated tokens** | 500K-1M | 1.5M-3M | 4M-8M |
+| **Reader wave size** | all at once (≤8) | all at once (≤20) | 10 per wave |
+| **Screener wave size** | all at once (≤3) | all at once (≤6) | 6 per wave |
+| **Merge wave size** | all at once (≤3) | all at once (≤5) | 5 per wave |
+| **Collector wave size** | all at once (≤4) | all at once (≤6) | 5 per wave |
+| **Budget warning threshold** | 60% of 750K | 60% of 2.25M | 60% of 6M |
+| **Orchestrator context target** | <300K | <500K | <700K |
+| **Orchestrator context hard cap** | 400K | 600K | 800K |
 
 ## Depth Selection Logic
 
@@ -48,14 +55,14 @@ Query GENERATION (Phase 2a) uses Sonnet because generating diverse research pers
 | Phase | Standard | Deep | Exhaustive |
 |---|---|---|---|
 | Search execution (WebSearch) | Orchestrator | Orchestrator | Orchestrator |
-| Query generation (Phase 2a) | 1 Sonnet | 2 Sonnet | 3-4 Sonnet |
+| Query generation (Phase 2a) | 1 Sonnet | 1 Sonnet | 1 Sonnet |
 | Pre-screening (Phase 3) | Haiku | Haiku | Haiku |
 | Deduplication | Orchestrator | Orchestrator | Orchestrator |
 | Source reading (Phase 4a) | Sonnet | Sonnet | Sonnet |
 | Validation gates (Phase 4b, 5b) | **Haiku** | **Haiku** | Sonnet |
 | Tree merge (Level 1, Phase 5a) | Sonnet | Sonnet | Sonnet |
 | Tree merge (Level 2, Phase 5c) | — | Sonnet | Sonnet |
-| Gap analysis (Phase 6) | **Sonnet** | Opus | Opus |
+| Gap analysis (Phase 6) | Sonnet | Sonnet | Sonnet |
 | Round 2 collectors (Phase 7) | Sonnet | Sonnet | Sonnet |
 | Skeptic review (Phase 7) | Opus | Opus | Opus |
 | Final synthesis (Phase 8) | Opus | Opus | Opus |

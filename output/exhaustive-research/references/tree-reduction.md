@@ -31,14 +31,21 @@ Sources (N)
 - **Universal batch size**: 5-7 items per agent (sources or reports)
 - If fewer than 5 items remain at any level, merge them directly at the next level
 - If 6-7 items remain, use a single agent (no need for tree level)
+- **L2 merge agents receive exactly 5 reports each** — if more than 5 intermediate reports remain after Level 1, split into batches of 5 for separate L2 agents
 - **Hard cap**: Tree depth never exceeds 3 levels regardless of source count
 
 ## Anti-Recursion Instruction
 
-Include this in every agent prompt (Haiku, Sonnet, and Opus):
+Include this block verbatim at the END of every agent prompt (Haiku, Sonnet, and Opus):
 
 ```
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly.
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool or Skill tool under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- Do NOT use WebSearch unless explicitly permitted in your task instructions above.
+- Do NOT use WebFetch unless explicitly permitted in your task instructions above.
+- If you identify a gap or missing piece that needs more research, note it in your output — but do NOT attempt to fill it yourself. The orchestrator will handle follow-up.
+- Return your findings directly as text. This is the ONLY action you should take.
 ```
 
 ## Level 0: Reader Agent Prompt Template
@@ -74,7 +81,12 @@ METADATA:
 
 Keep your entire response under 800 words.
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly.
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool or Skill tool under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- You MAY use WebFetch for up to 2 sources (the 2 highest-scored in your batch). Do NOT use WebSearch.
+- If you identify a gap or missing piece, note it in your output — do NOT attempt to research further.
+- Return your findings directly as text. This is the ONLY action you should take.
 ```
 
 ## Level 1: Merge Agent Prompt Template
@@ -112,7 +124,15 @@ METADATA:
 
 Keep your entire response under 1500 words.
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly.
+IMPORTANT: You are merging pre-collected reports. Do NOT use WebSearch, WebFetch, Agent, or Skill tools to verify or supplement claims. Synthesize only from the reports provided. If a claim seems unverifiable, note uncertainty in your output — do not fetch.
+
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool or Skill tool under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- Do NOT use WebSearch unless explicitly permitted in your task instructions above.
+- Do NOT use WebFetch unless explicitly permitted in your task instructions above.
+- If you identify a gap or missing piece that needs more research, note it in your output — but do NOT attempt to fill it yourself. The orchestrator will handle follow-up.
+- Return your findings directly as text. This is the ONLY action you should take.
 ```
 
 ## Validation Gate Prompt Template
@@ -137,18 +157,21 @@ For each report, return:
 
 Keep your response under 200 words per report reviewed.
 
-You are a leaf-node agent. Do NOT use Agent or Skill tools — return your findings directly.
+CRITICAL: You are a leaf-node agent in a pre-built research pipeline.
+- Do NOT use the Agent tool, Skill tool, WebSearch, or WebFetch under any circumstances.
+- Do NOT spawn sub-agents, assistants, or sub-tasks.
+- Return your structural verdicts directly as text. This is the ONLY action you should take.
 ```
 
 ## Token Budget Per Agent
 
 | Agent Type | Max Input | Max Output | Notes |
 |---|---|---|---|
-| Haiku screener | ~8K tokens | ~3K tokens | 40-50 snippets x ~150 tokens (condensed rubric) |
+| Haiku screener | ~8K tokens | ~6K tokens | 40-50 snippets x ~150 tokens; JSON output ~100 tokens/entry |
 | Sonnet reader (L0) | ~12K tokens | ~1.2K tokens | 5-7 sources, 2 WebFetch + snippets |
 | Sonnet merge (L1) | ~8K tokens | ~2.5K tokens | 5 mini-reports x ~1.5K each |
-| Sonnet merge (L2) | ~15K tokens | ~3K tokens | 5 intermediate reports x ~3K |
-| Sonnet validator | ~10K tokens | ~2K tokens | Checking 3-5 reports |
-| Opus gap analysis | ~20K tokens | ~4K tokens | All intermediate reports |
+| Sonnet merge (L2) | ~20K tokens | ~3K tokens | Up to 5 intermediate reports x ~3K; hard cap 5 per agent |
+| Sonnet validator | ~10K tokens | ~2K tokens | Checking batch of 5 reports |
+| Sonnet gap analysis | ~20K tokens | ~4K tokens | All intermediate reports |
 | Opus skeptic | ~15K tokens | ~3K tokens | Claims + context |
 | Opus synthesis | ~25K tokens | ~8K tokens | Everything merged |

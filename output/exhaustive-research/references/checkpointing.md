@@ -40,10 +40,23 @@ Save a JSON checkpoint file after each major phase completes. Location: `{save_d
     "opus_completed": 0,
     "opus_failed": 0
   },
-  "failures": []
+  "failures": [],
+  "search_retry_executed": false,
+  "agent_retries": {
+    "batch_5": {"retries": 1, "status": "TIMED_OUT"},
+    "batch_12": {"retries": 1, "status": "TIMED_OUT"}
+  },
+  "wave_status": [
+    {"phase": 4, "wave": 1, "spawned": 10, "completed": 9, "timed_out": ["batch_5"]},
+    {"phase": 4, "wave": 2, "spawned": 10, "completed": 10, "timed_out": []}
+  ]
 }
 
 **Note**: Only include fields relevant to the completed phase. Omit fields that haven't been populated yet (e.g., no `reader_agents_completed` at Phase 2). On resume, the presence/absence of fields indicates what data is available.
+
+**Per-agent retry rule**: On resume, do NOT re-run any agent with `retries >= 1` in `agent_retries`. Treat it as a permanent coverage gap. This prevents infinite retry loops for persistently failing agents.
+
+**Search retry flag**: `search_retry_executed` tracks whether Phase 2b's "retry with broader queries" has been used. On resume from Phase 2, check this flag before retrying — if true, skip directly to Phase 3.
 ```
 
 ## Checkpoint Save Points
@@ -80,6 +93,19 @@ Each agent's output file serves as an implicit sub-phase checkpoint:
 - Skeptic report: `{save_dir}/round2/skeptic.md`
 
 On phase failure, check which output files already exist. Only re-run agents whose output files are missing. This provides per-agent recovery without per-agent checkpoint overhead.
+
+## Wave-Level Checkpointing (Exhaustive Depth)
+
+At Exhaustive depth, agent spawning is broken into waves. Mini-reports and intermediate reports are written to disk **after each wave completes** (not just at the end of the phase). This means:
+- If the skill is interrupted mid-phase, completed waves are preserved
+- On resume, check which `batch_{N}.md` / `group_{N}.md` files already exist
+- Only re-run agents for batches whose output files are missing
+- Timed-out agents from a prior wave are NOT re-run (they are coverage gaps, not failures)
+
+Wave progress is reflected in the Phase Recap with an additional line:
+```
+- Waves: [completed]/[total] (wave size: [N])
+```
 
 ## Progress Reporting Template
 

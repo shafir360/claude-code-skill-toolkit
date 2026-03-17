@@ -10,9 +10,11 @@ When `/deep-research` isn't enough, `/exhaustive-research` scales up by 10-100x.
 - **Cost-efficient**: 3-tier model strategy puts 70-80% of API calls on Haiku, saving 15-50x vs using Opus for everything
 - **No overload**: Hierarchical tree-reduction means no single agent ever sees more than 5-7 sources
 - **Quality-gated**: Structural validation gates between every tree level prevent error cascading — the #1 failure mode in multi-agent systems
-- **Safe**: 5-layer anti-recursion defense; no agent can spawn sub-agents; every phase has hard timeouts
-- **Resilient**: Phase-boundary checkpointing with resume support; skip-and-note over retry storms; early termination on bad query sets
+- **Safe**: Multi-layer anti-recursion defense (expanded CRITICAL blocks on every agent prompt, explicit per-tool restrictions); no agent can spawn sub-agents; every phase has hard timeouts
+- **Resilient**: Phase-boundary checkpointing with wave-level recovery and per-agent retry tracking; skip-and-note over retry storms; early termination on bad query sets
 - **Transparent**: Phase Recap blocks show progress after every phase — agents completed, sources processed, elapsed time, next steps
+- **Context-aware**: Save-and-release streaming prevents context window overflow (~1M token limit) during Exhaustive runs; load-on-demand pattern keeps orchestrator under 700K tokens
+- **Wave-batched**: Large agent spawns are broken into bounded waves (max 10) so one silent agent never blocks the entire phase
 
 ## Quick Start
 
@@ -53,7 +55,7 @@ For best results, run `/deep-research` first, then feed its output into `/exhaus
 | 3. Screen | ~5 min | ~20 min | Haiku agents score snippets for relevance/credibility |
 | 4. Read | ~10 min | ~40 min | Sonnet agents deeply read top-scoring sources (5 per agent) |
 | 5. Merge | ~5 min | ~20 min | Tree reduction: Level 0 → Level 1 → (Level 2) → Root |
-| 6. Gap Analysis | ~3 min | ~10 min | Opus identifies contradictions, thin coverage, circular sourcing |
+| 6. Gap Analysis | ~3 min | ~10 min | Sonnet identifies contradictions, thin coverage, circular sourcing |
 | 7. Round 2 | ~10 min | ~40 min | Sonnet collectors fill gaps; Opus skeptic challenges claims |
 | 8. Synthesize | ~5 min | ~15 min | Opus merges everything into final synthesis |
 | 9. Report | ~5 min | ~15 min | Generate report, self-check, save to confirmed location |
@@ -128,6 +130,9 @@ These findings from the Enhanced Design Brief directly shaped the skill's archit
 | Skip-and-note policy | Max 1 retry (timeout only); never retry bad output | Portkey: naive retries caused $10+/day cost explosions |
 | Early termination | Pause on <20% screen pass rate or >30% agent failure | ReliabilityBench: small failures compound quickly |
 | Phase Recaps | Text progress block after every phase | Nielsen Norman: any feedback > no feedback |
+| Wave-batching | Max 10 agents per wave; timed-out agents skipped immediately | Prevents single silent agent from blocking entire phase |
+| Context streaming | Save-and-release pattern; load-on-demand from disk | Prevents 1M token context overflow on Exhaustive runs |
+| Per-agent retry tracking | Checkpoint tracks retries per agent; max 1 retry ever | Prevents infinite re-run loops on resume |
 
 ## Limitations & Edge Cases
 
